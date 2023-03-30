@@ -12,6 +12,7 @@
 #include <Adafruit_ADS1015.h>//библиотека для работы с ADS1115 АЦП 
 
 #define ONE_WIRE_BUS 5
+#define COUNT_FLTR 10
 
 SunPosition pos;
 
@@ -20,7 +21,7 @@ DallasTemperature ds_sensors(&oneWire);
 Adafruit_MLX90614 mlx = Adafruit_MLX90614();
 Adafruit_ADS1115 ads;
 
-// Timer rndTimer(2000); пример иниц таймера
+//Timer rndTimer(2000); пример иниц таймера
 
 /*
   Барометр
@@ -29,6 +30,27 @@ Adafruit_ADS1115 ads;
   термометры
   тд
 */
+
+
+void flt_ads(uint8_t pin=0){
+  static Timer tmr;
+  static int16_t sum[4] = {0, 0, 0, 0};
+  static uint8_t count = 0;
+  static int16_t last_zn[4] = {0, 0, 0, 0};
+  if (tmr.ready()){
+    for(uint8_t i = 0; i < 4; i++){
+      sum[i]+=ads.readADC_SingleEnded(i);
+    }
+    count++;
+  } 
+  if (count>=COUNT_FLTR-1){
+    for(uint8_t i = 0; i < 4; i++){
+      last_zn[i]=sum[i]/count;
+    }
+    count=0;
+  }
+  return last_zn[pin];
+}
 
 void setup() {
   Serial.begin(9600);
@@ -54,4 +76,5 @@ void setup() {
 }
 
 void loop() {
+  flt_ads();
 }
