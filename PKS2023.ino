@@ -2,7 +2,10 @@
 #include <Wire.h>
 #include <OneWire.h>
 
+#include <TimeLib.h>
 #include "timer.h" //библиотека таймера
+#include "SunPosition.h"//библиотека для определения положения солнца
+
 #include <MS5611.h>//библиотека для работы с ms5611 барометром https://www.yourduino.ru/blogs/blog/GY63urok
 #include <Adafruit_MLX90614.h> //библиотека для работы с MLX90614 ИК датчиком температуры
 #include <DallasTemperature.h>//библиотека для работы с ds18b20 датчиком температуры
@@ -10,6 +13,7 @@
 
 #define ONE_WIRE_BUS 5
 
+SunPosition pos;
 
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature ds_sensors(&oneWire);
