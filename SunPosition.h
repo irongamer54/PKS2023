@@ -1,30 +1,3 @@
-/*
-    Библиотека для определения положения солнца по геолокации и времени
-    Документация:
-    GitHub: https://github.com/GyverLibs/SunPosition
-    Возможности:
-    - Берёт широту, долготу и unix время
-    - Выдаёт угол по азимуту, угол возвышения и склонения солнца
-    
-    AlexGyver, alex@alexgyver.ru
-    https://alexgyver.ru/
-    MIT License
-    
-    v1.1 - полностью переписаны уравнения, добавлен вывод времени и азимута заката/рассвета и другие полезные углы (см. доку)
-*/
-
-/*
-    Источники:
-    Astronomical Almanac p C2
-    https://www.astrogreg.com/snippets/equationoftime-simple.html
-    https://www.itacanet.org/the-sun-as-a-source-of-energy/part-3-calculating-solar-angles/
-    https://webcms3.cse.unsw.edu.au/ENGG1811/16s1/forums/514357
-    https://gml.noaa.gov/grad/solcalc/calcdetails.html
-    нужен double! http://users.electromagnetic.net/bu/astro/sunrise-set.php
-
-    для проверки https://www.suncalc.org/
-    http://www.geoastro.de/astro/suncalc/index.htm
-*/
 
 #ifndef _SunPosition_h
 #define _SunPosition_h
@@ -144,39 +117,4 @@ struct SunPosition {
     uint16_t noonT = 0;
 };
 
-/*
-    // без оптимизации
-    float JulDay = unixSecs / 86400.0 + 2440587.5;  // Julian day
-    float JulCent = (JulDay - 2451545.0) / 36525.0; // Julian Century
-    float GeomMeanLong = fmod(280.46646 + JulCent * (36000.76983 + JulCent * 0.0003032), 360); // Geom Mean Long Sun
-    float GeomMeanAnom = 357.52911 + JulCent * (35999.05029 - 0.0001537 * JulCent); // Geom Mean Anom Sun
-    float EccEart = 0.016708634 - JulCent * (0.000042037 + 0.0000001267 * JulCent); // Eccent Earth Orbit
-    float SunEqCtr = sin(radians(GeomMeanAnom)) * (1.914602 - JulCent * (0.004817 + 0.000014 * JulCent)); // Sun Eq of Ctr
-    SunEqCtr += sin(2 * radians(GeomMeanAnom)) * (0.019993 - 0.000101 * JulCent);
-    SunEqCtr += sin(3 * radians(GeomMeanAnom)) * 0.000289;
-    float SunTrLong = GeomMeanLong + SunEqCtr;  // Sun True Long
-    float SunTrAnom = GeomMeanAnom + SunEqCtr;  // Sun True Anom
-    float SunRad = (1.000001018 * (1.0 - EccEart * EccEart)) / (1 + EccEart * cos(radians(SunTrAnom))); // Sun Rad Vector (AUs)
-    float SunApp = SunTrLong - 0.00569 - 0.00478 * sin(radians(125.04 - 1934.136 * JulCent)); // Sun App Long
-    float MeanOblq = 23 + (26 + ((21.448 - JulCent * (46.815 + JulCent * (0.00059 - JulCent * 0.001813)))) / 60.0) / 60.0;  // Mean Obliq Ecliptic
-    float ObliqCor = MeanOblq + 0.00256 * cos(radians(125.04 - 1934.136 * JulCent));  // Obliq Corr
-    float SunDecl = degrees(asin(sin(radians(ObliqCor)) * sin(radians(SunApp)))); // Sun Declin
-    float y = tan(radians(ObliqCor / 2)) * tan(radians(ObliqCor / 2));
-    float EqTime = 4 * degrees(y * sin(2 * radians(GeomMeanLong)) - 2 * EccEart * sin(radians(GeomMeanAnom)) + 4 * EccEart * y * sin(radians(GeomMeanAnom)) * cos(2 * radians(GeomMeanLong)) - 0.5 * y * y * sin(4 * radians(GeomMeanLong)) - 1.25 * EccEart * EccEart * sin(2 * radians(GeomMeanAnom)));   // Eq of Time (minutes)
-    float HA = degrees(acos(cos(radians(90.833)) / (cos(radians(lat)) * cos(radians(SunDecl))) - tan(radians(lat)) * tan(radians(SunDecl))));  // HA Sunrise
-    int GMT = 0;
-    float SunN = 720 - 4 * lon - EqTime + GMT * 60; // Solar Noon (LST) + gmt
-    float SunR = SunN - HA * 4;  // Sunrise Time (LST) + gmt
-    float SunS = SunN + HA * 4;  // Sunset Time (LST) + gmt
-    float SunL = 8 * HA;  // Sunlight Duration (minutes) minutes
-    float hours = (unixSecs % 86400) / 86400.0;
-    float TrueSol = fmod(hours * 1440 + EqTime + 4 * lon, 1440);  // True Solar Time (min)
-    float HourAngle = (TrueSol / 4 < 0) ? TrueSol / 4 + 180 : TrueSol / 4 - 180;  // Hour Angle
-    float Zenith = degrees(acos(sin(radians(lat)) * sin(radians(SunDecl)) + cos(radians(lat)) * cos(radians(SunDecl)) * cos(radians(HourAngle))));
-    float Elev = 90 - Zenith;
-    float Azim = degrees(acos(((sin(radians(lat)) * cos(radians(Zenith))) - sin(radians(SunDecl))) / (cos(radians(lat)) * sin(radians(Zenith)))));
-    if (HourAngle > 0) Azim = Azim + 180;
-    else Azim = 540 - Azim;
-    Azim = fmod(Azim, 360);
-*/
 #endif
