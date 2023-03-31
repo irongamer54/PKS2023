@@ -2,6 +2,9 @@
 #include <Wire.h>
 #include <OneWire.h>
 
+#include <GParser.h>//парсинг Serial
+#include <AsyncStream.h>
+
 #include <TimeLib.h>
 #include "timer.h" //библиотека таймера
 #include "SunPosition.h"//библиотека для определения положения солнца
@@ -18,6 +21,8 @@
 #define ADS_UPDATE_TIME 2000
 
 SunPosition pos;
+
+AsyncStream<100> serial(&Serial, ';');
 
 OneWire oneWire(ONE_WIRE_BUS);
 
@@ -118,4 +123,9 @@ void setup() {
 void loop() {
   flt_ads();
   dsGetTemp();
+
+   if (serial.available()) { 
+    Serial.println(serial.buf);    
+  }
+  
 }

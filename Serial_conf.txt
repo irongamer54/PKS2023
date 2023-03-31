@@ -1,0 +1,26 @@
+Ключ платы ПН: n
+данные для передачи:
+t    Температура с каждого ds 6x float
+i    Температура с ИК float
+b    Угол солнца над горизонтом int16_t
+a    Азимут солнца int16_t
+p    Данные с барометра float
+c    Скорость врашения центрифуги int16_t
+s    Информация об углах серв 2x int16_t
+m    Обороты моторов 2x int16_t
+r    Состояние транзисторов 3x uint16_t
+u    Данные с АЦП 4x int16_t
+
+n,t,temp1,temp2,temp3,temp4,temp5,temp6,i,tempIK,b,alfa,a,alfa,p,pressure,c,speed_c,s,angle1,angle2,m,speed_m1,speed_m2,r,mos1,mos2,mos3,u,ads0,ads1,ads2,ads3;
+
+n,t,float,float,float,float,float,float,i,float,b,int16_t,a,int16_t,p,float,c,int16_t,s,int16_t,int16_t,m,int16_t,int16_t,r,uint16_t,uint16_t,uint16_t,u,int16_t,int16_t,int16_t,int16_t;
+
+Ключ платы ПН: f
+данные для приёма:
+g    GPS 2x float
+t    время в unix uint32_t
+m    режим работы системы uint8_t
+s    скорость моторов 2x int16_t
+a    углы поворота серв 2x int16_t
+r    включение транзисторов 3x uint16_t
+    
