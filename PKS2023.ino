@@ -34,6 +34,18 @@ Adafruit_ADS1115 ads;
 
 MS5611 ms5611;
 
+float cords[2] = {0,0};
+
+uint32_t unix = 0; //поставить дату запуска
+
+uint8_t mode = 0;
+
+int16_t speeds[2] = {0,0};
+
+int16_t srv_angle[2]={0,0};//поставить 
+
+uint16_t trn_speed[3]={0,0,0};
+
 //Timer dsUpdateTmr(2000);
 
 /*
@@ -97,6 +109,47 @@ int16_t flt_ads(uint8_t pin=0){ // функция фильтрации знач�
   return last_zn[pin];
 }
 
+void Parser(){
+  GParser data(serial.buf, ',');
+  uint8_t dt_len=data.split();
+  if (data[i]=='f'){
+    for(uint8_t i=1;i<dt_len;i++){
+      switch (data[i])
+      {
+      case 'g':
+        cords[0]=data.getFloat(i+1);
+        cords[1]=data.getFloat(i+2);
+        i+=2;
+        break;
+      case 't':
+        unix=data.getInt(i+1);
+        i+=1;
+        break;
+      case 'm':
+        mode=data.getInt(i+1);
+        i+=1;
+        break;
+      case 's':
+        speeds[0]=data.getInt(i+1);
+        speeds[1]=data.getInt(i+2);
+        i+=2;
+        break;
+      case 'a':
+        srv_angle[0]=data.getInt(i+1);
+        srv_angle[1]=data.getInt(i+2);
+        i+=2;
+        break;
+      case 'r':
+        trn_speed[0]=data.getInt(i+1);
+        trn_speed[1]=data.getInt(i+2);
+        trn_speed[2]=data.getInt(i+3);
+        i+=3;
+        break;
+      }
+    }
+  }
+}
+
 void setup() {
   Serial.begin(9600);
 
@@ -124,8 +177,7 @@ void loop() {
   flt_ads();
   dsGetTemp();
 
-   if (serial.available()) { 
-    Serial.println(serial.buf);    
+  if (serial.available()) { 
+    Parser();
   }
-  
 }
