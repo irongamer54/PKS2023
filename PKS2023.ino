@@ -14,11 +14,7 @@
 #include <DallasTemperature.h>//библиотека для работы с ds18b20 датчиком температуры
 #include <Adafruit_ADS1X15.h>//библиотека для работы с ADS1115 АЦП 
 
-#define ONE_WIRE_BUS 5
-#define COUNT_FLTR 10
-
-#define DS_UPDATE_TIME 2000
-#define ADS_UPDATE_TIME 2000
+#include "config.h"
 
 SunPosition pos;
 
@@ -42,7 +38,7 @@ uint8_t mode = 0;
 
 int16_t speeds[2] = {0,0};
 
-int16_t srv_angle[2]={0,0};//поставить 
+int16_t srv_angle[2]={0,0}; //поставить начальные углы
 
 uint16_t trn_speed[3]={0,0,0};
 
@@ -56,7 +52,7 @@ uint16_t trn_speed[3]={0,0,0};
   тд
 */
 
-void printAddress(DeviceAddress deviceAddress){// функция вывода адресов ds18b20
+void printAddress(DeviceAddress deviceAddress){ // функция вывода адресов ds18b20
   for (uint8_t i = 0; i < 8; i++){
     if (deviceAddress[i] < 16) Serial.print("0");
     Serial.print(deviceAddress[i], HEX);
@@ -109,12 +105,13 @@ int16_t flt_ads(uint8_t pin=0){ // функция фильтрации знач�
   return last_zn[pin];
 }
 
-void Parser(){
+void Parser(){  //парсинг Serial
   GParser data(serial.buf, ',');
   uint8_t dt_len=data.split();
-  if (data[i]=='f'){
+  if (data[0]=='f'){
     for(uint8_t i=1;i<dt_len;i++){
-      switch (data[i])
+      char sim = data[i];
+      switch (sim)
       {
       case 'g':
         cords[0]=data.getFloat(i+1);
@@ -151,7 +148,7 @@ void Parser(){
 }
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(SERIAL_SPEED);
 
   for (uint8_t c = 0; c < 50; c++){
     if (mlx.begin()) break;
