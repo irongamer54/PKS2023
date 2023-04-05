@@ -1,6 +1,8 @@
 //основной код (он будет тут (когда нибуть(но это не точно)))
 #include <Wire.h>
 #include <OneWire.h>
+#include <Servo.h>
+#include "motor.h"
 
 #include <GParser.h>//парсинг Serial
 #include <AsyncStream.h>
@@ -29,6 +31,11 @@ Adafruit_MLX90614 mlx = Adafruit_MLX90614();
 Adafruit_ADS1115 ads;
 
 MS5611 ms5611;
+
+Servo otr_srv;
+Servo angl_srv;
+
+Motor 
 
 float cords[2] = {0,0};
 
@@ -168,6 +175,8 @@ void setup() {
     delay(200);
   }
 
+  otr_srv.attach(SRV_PIN_1)
+  angl_srv.attach(SRV_PIN_2)
 }
 
 void loop() {
