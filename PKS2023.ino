@@ -4,6 +4,8 @@
 #include <Servo.h>
 #include "motor.h"
 
+#include <GyverTimers.h>
+
 #include <GParser.h>//парсинг Serial
 #include <AsyncStream.h>
 
@@ -35,7 +37,8 @@ MS5611 ms5611;
 Servo otr_srv;
 Servo angl_srv;
 
-Motor 
+Motor mtr1;//переименовать)
+Motor mtr2;//переименовать)
 
 float cords[2] = {0,0};
 
@@ -177,6 +180,9 @@ void setup() {
 
   otr_srv.attach(SRV_PIN_1)
   angl_srv.attach(SRV_PIN_2)
+
+  Timer0.setFrequency(40000);    
+  Timer0.enableISR();            
 }
 
 void loop() {
@@ -186,4 +192,9 @@ void loop() {
   if (serial.available()) { 
     Parser();
   }
+}
+
+ISR(TIMER2_A) {
+  mtr1.newTiсk();//переименовать)
+  mtr2.newTiсk();//переименовать)
 }
