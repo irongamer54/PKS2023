@@ -37,8 +37,8 @@ MS5611 ms5611;
 Servo otr_srv;
 Servo angl_srv;
 
-Motor mtr1;//переименовать)
-Motor mtr2;//переименовать)
+Motor mtr1(MTR_F_1,MTR_B_1);//переименовать)
+Motor mtr2(MTR_F_2,MTR_B_2);//переименовать)
 
 float cords[2] = {0,0};
 
@@ -178,8 +178,8 @@ void setup() {
     delay(200);
   }
 
-  otr_srv.attach(SRV_PIN_1)
-  angl_srv.attach(SRV_PIN_2)
+  otr_srv.attach(SRV_PIN_1);
+  angl_srv.attach(SRV_PIN_2);
 
   Timer0.setFrequency(40000);    
   Timer0.enableISR();            
@@ -195,6 +195,6 @@ void loop() {
 }
 
 ISR(TIMER2_A) {
-  mtr1.newTiсk();//переименовать)
-  mtr2.newTiсk();//переименовать)
+  mtr1.newTick();//переименовать)
+  mtr2.newTick();//переименовать)
 }

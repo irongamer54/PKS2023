@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include "FastIO.h"
 
+#define PWM_DEPTH 100
+
 class Motor {
   public:
     Motor(uint8_t npin_f,uint8_t npin_b) {
@@ -17,7 +19,7 @@ class Motor {
     int16_t getSpeed() {
       return speed;
     }
-    void newTiсk(){
+    void newTick(){
       static volatile uint8_t counter = 0;  // Счетчик
 
       if (counter > PWM_DEPTH) {
