@@ -50,7 +50,7 @@ int16_t speeds[2] = {0,0};
 
 int16_t srv_angle[2]={0,0}; //поставить начальные углы
 
-uint16_t trn_speed[3]={0,0,0};
+uint8_t trn_speed[3]={0,0,0};
 
 //Timer dsUpdateTmr(2000);
 
@@ -113,6 +113,36 @@ int16_t flt_ads(uint8_t pin=0){ // функция фильтрации знач�
     }
   } 
   return last_zn[pin];
+}
+
+struct Str {
+  float temp1;
+  float temp2;
+  float temp3;
+  float temp4;
+  float temp5;
+  float temp6;
+  float tempIK;
+  int16_t alfa;
+  int16_t azim;
+  float prs;
+  int16_t speed_c;
+  int16_t angle1;
+  int16_t angle2;
+  int16_t speed_m1;
+  int16_t speed_m2;
+  uint8_t mos1;
+  uint8_t mos2;
+  uint8_t mos3;
+  int16_t ads0;
+  int16_t ads1;
+  int16_t ads2;
+  int16_t ads3;
+  byte crc;
+};
+
+void SendData(){
+
 }
 
 void Parser(){  //парсинг Serial
