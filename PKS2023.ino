@@ -4,8 +4,9 @@
 #include <Servo.h>
 #include "motor.h"
 
-#include <GyverTimers.h>
+#include <GyverTimers.h>// прерывания 
 
+#include "mString.h"// библиотека быстрого String автор кода ленивый
 #include <GParser.h>//парсинг Serial
 #include <AsyncStream.h>
 
@@ -83,20 +84,13 @@ uint8_t DSInit(bool is_init = 0){ //функция инициализации ds
   return ds_count;
 }
 
-float dsGetTemp(uint8_t indx=0){//получение температуры с ds18b20 
+void dsGetTemp(){//хаха, я оставлю функцию, просто потому-что могу 
   static Timer tmr(DS_UPDATE_TIME);
-  static float temperature[10];
-  if (tmr.ready()){
-    ds_sensors.requestTemperatures();
-    for (int i = 0; i < DSInit(1); i++) {
-      temperature[i] = ds_sensors.getTempCByIndex(i);
-    }
-  }
-  return temperature[indx];
+  if (tmr.ready()) ds_sensors.requestTemperatures();
 }
 
 int16_t flt_ads(uint8_t pin=0){ // функция фильтрации значений с ацп 
-  static Timer tmr(ADS_UPDATE_TIME/COUNT_FLTR);
+  static Timer tmr(ADS_UPDATE_TIME/COUNT_FLTR); //А вот эту функцию трогать не буду)))
   static int16_t sum[4] = {0, 0, 0, 0};
   static uint8_t count = 1;
   static int16_t last_zn[4] = {0, 0, 0, 0};
@@ -108,6 +102,7 @@ int16_t flt_ads(uint8_t pin=0){ // функция фильтрации знач�
     if (count>=COUNT_FLTR){
       for(uint8_t i = 0; i < 4; i++){
         last_zn[i]=sum[i]/(count);
+        sum[i]=0;
       }
       count=1;
     }
@@ -116,33 +111,27 @@ int16_t flt_ads(uint8_t pin=0){ // функция фильтрации знач�
 }
 
 struct Str {
-  float temp1;
-  float temp2;
-  float temp3;
-  float temp4;
-  float temp5;
-  float temp6;
+  float temp[6];
   float tempIK;
   int16_t alfa;
   int16_t azim;
   float prs;
   int16_t speed_c;
-  int16_t angle1;
-  int16_t angle2;
-  int16_t speed_m1;
-  int16_t speed_m2;
-  uint8_t mos1;
-  uint8_t mos2;
-  uint8_t mos3;
-  int16_t ads0;
-  int16_t ads1;
-  int16_t ads2;
-  int16_t ads3;
-  byte crc;
+  int16_t angle[2];
+  int16_t speed_m[2];
+  uint8_t mos[3];
+  int16_t ads[4];
 };
 
 void SendData(){
+  Str buf;
+  mString<50> dataStr;
 
+  for(uint8_t indx = 0; i < 6; i++){
+    buf.temp[indx]=ds_sensors.getTempCByIndex(indx);
+  }
+
+  Serial.write((byte*)&buf, sizeof(buf))
 }
 
 void Parser(){  //парсинг Serial
@@ -181,7 +170,7 @@ void Parser(){  //парсинг Serial
         trn_speed[1]=data.getInt(i+2);
         trn_speed[2]=data.getInt(i+3);
         i+=3;
-        break;
+        break;     
       }
     }
   }
@@ -218,7 +207,6 @@ void setup() {
 void loop() {
   flt_ads();
   dsGetTemp();
-
   if (serial.available()) { 
     Parser();
   }
