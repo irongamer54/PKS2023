@@ -123,6 +123,7 @@ struct Str {
   int16_t speed_m[2];
   uint8_t mos[3];
   int16_t ads[4];
+  byte crc;
 };
 
 void SendData(){ //функция отправки данных
@@ -141,10 +142,16 @@ void SendData(){ //функция отправки данных
 
   dataStr+=",b,"
   buf.alfa=pos.altitude(indx);
+
+  // Сказать Лере дописать эту часть кода (дозаполнить структуру)
+
+  byte crc = crc8((byte*)&buf, sizeof(buf) - 1);
+  buf.crc = crc;
+
   Serial.write((byte*)&buf, sizeof(buf))
 }
 
-void Parser(){  //парсинг Serial
+void Parser(){  //парсинг Serial переделать
   GParser data(serial.buf, ',');
   uint8_t dt_len=data.split();
   if (data[0]=='f'){
@@ -186,8 +193,20 @@ void Parser(){  //парсинг Serial
   }
 }
 
+byte crc8(byte *buffer, byte size) { // функция вычисления crc
+  byte crc = 0;
+  for (byte i = 0; i < size; i++) {
+    byte data = buffer[i];
+    for (int j = 8; j > 0; j--) {
+      crc = ((crc ^ data) & 1) ? (crc >> 1) ^ 0x8C : (crc >> 1);
+      data >>= 1;
+    }
+  }
+  return crc;
+}
+
 int16_t  Centri_speed(){
-  static uint32_t last_time=0
+  static uint32_t last_time=0 // дописать Лере
 }
 
 void setup() {
@@ -231,5 +250,5 @@ void loop() {
 ISR(TIMER2_A) {
   mtr1.newTick();//переименовать)
   mtr2.newTick();//переименовать)
-  
+  // функцию для скорости центрифуги сюда Лере
 }
