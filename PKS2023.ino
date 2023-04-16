@@ -21,6 +21,8 @@
 
 #include "config.h"
 
+//using namespace IntroSatLib; // интросас https://github.com/Goldfor/IntroSatLib
+
 SunPosition pos;
 
 AsyncStream<100> serial(&Serial, ';');
@@ -123,14 +125,22 @@ struct Str {
   int16_t ads[4];
 };
 
-void SendData(){
+void SendData(){ //функция отправки данных
   Str buf;
   mString<50> dataStr;
-
+  
+  dataStr+="n,t,"
   for(uint8_t indx = 0; i < 6; i++){
     buf.temp[indx]=ds_sensors.getTempCByIndex(indx);
+    dataStr+=buf.temp[indx];
   }
 
+  dataStr+="i,"
+  buf.tempIK=ds_sensors.getTempCByIndex(indx);
+  dataStr+=buf.tempIK;
+
+  dataStr+=",b,"
+  buf.alfa=pos.altitude(indx);
   Serial.write((byte*)&buf, sizeof(buf))
 }
 
@@ -176,8 +186,14 @@ void Parser(){  //парсинг Serial
   }
 }
 
+int16_t  Centri_speed(){
+  static uint32_t last_time=0
+}
+
 void setup() {
   Serial.begin(SERIAL_SPEED);
+
+  Wire.begin(); 
 
   for (uint8_t c = 0; c < 50; c++){
     if (mlx.begin()) break;
@@ -215,4 +231,5 @@ void loop() {
 ISR(TIMER2_A) {
   mtr1.newTick();//переименовать)
   mtr2.newTick();//переименовать)
+  
 }
