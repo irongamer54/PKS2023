@@ -178,6 +178,8 @@ void Parser(){  //парсинг Serial переделать
 
       for (uint8_t i =0; i<2;i++) cords[i]=buf.cords[i];
       
+      unix=buf.unix;
+
       // дописать Лере (записать данные в переменые в зависимости от режима)
     }else{
       //запросить повтор пакета
@@ -244,7 +246,7 @@ void setup() {
 
   Wire.begin(); 
 
-  for (uint8_t c = 0; c < 50; c++){
+  for (uint8_t c = 0; c < 50; c++){ // иниициализауия датчика
     if (mlx.begin()) break;
     delay(200);
   } 
