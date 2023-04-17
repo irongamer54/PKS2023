@@ -237,7 +237,7 @@ byte crc8(byte *buffer, byte size) { // функция вычисления crc
   return crc;
 }
 
-int16_t  Centri_speed(){
+int16_t  Centri_speed(){// функция для вычисления скорости врашения камеры
   static uint32_t last_time=0; // дописать Лере
 }
 
@@ -246,7 +246,7 @@ void setup() {
 
   Wire.begin(); 
 
-  for (uint8_t c = 0; c < 50; c++){ // иниициализауия датчика
+  for (uint8_t c = 0; c < 50; c++){ // Инициализация датчика
     if (mlx.begin()) break;
     delay(200);
   } 
@@ -285,7 +285,7 @@ void loop() {
     /* code */ //расписать работу для каждого режима
     break;
   case 2:
-    /* code */
+    hand_mode();
     break;
   default:
     break;
