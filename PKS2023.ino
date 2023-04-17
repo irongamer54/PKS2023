@@ -180,49 +180,11 @@ void Parser(){  //парсинг Serial переделать
       
       unix=buf.unix;
 
-      // дописать Лере (записать данные в переменые в зависимости от режима)
+      // дописать Лере (записать данные в переменые в зависимости от режима) не забыть ограничивать поступившие значения 
     }else{
       //запросить повтор пакета
     }
   }
-  /*uint8_t dt_len=data.split();
-  if (data[0]=='f'){
-    for(uint8_t i=1;i<dt_len;i++){
-      char sim = data[i];
-      switch (sim)
-      {
-      case 'g':
-        cords[0]=data.getFloat(i+1);
-        cords[1]=data.getFloat(i+2);
-        i+=2;
-        break;
-      case 't':
-        unix=data.getInt(i+1);
-        i+=1;
-        break;
-      case 'm':
-        mode=data.getInt(i+1);
-        i+=1;
-        break;
-      case 's':
-        speeds[0]=data.getInt(i+1);
-        speeds[1]=data.getInt(i+2);
-        i+=2;
-        break;
-      case 'a':
-        srv_angle[0]=data.getInt(i+1);
-        srv_angle[1]=data.getInt(i+2);
-        i+=2;
-        break;
-      case 'r':
-        trn_speed[0]=data.getInt(i+1);
-        trn_speed[1]=data.getInt(i+2);
-        trn_speed[2]=data.getInt(i+3);
-        i+=3;
-        break;     
-      }
-    }
-  }*/
 }
 
 byte crc8(byte *buffer, byte size) { // функция вычисления crc
@@ -271,6 +233,12 @@ void setup() {
   Timer0.enableISR();            
 }
 
+void manual_mode(){
+  angl_srv.write(srv_angle[0]);
+  otr_srv.write(srv_angle[1]);
+  // полученые с STM данные подавать на моторы и т.п (Лерочка, ты справишься!) p.s я так на тебя весь код перекину)
+}
+
 void loop() {
   flt_ads();
   dsGetTemp();
@@ -285,7 +253,7 @@ void loop() {
     /* code */ //расписать работу для каждого режима
     break;
   case 2:
-    hand_mode();
+    manual_mode();
     break;
   default:
     break;
