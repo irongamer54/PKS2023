@@ -6,9 +6,9 @@
 
 #include <GyverTimers.h>// прерывания 
 
-#include "mString.h"// библиотека быстрого String автор кода ленивый
+//#include "mString.h"// библиотека быстрого String автор кода ленивый
 #include <GParser.h>//парсинг Serial
-#include <AsyncStream.h>
+//#include <AsyncStream.h>
 
 #include <TimeLib.h>
 #include "timer.h" //библиотека таймера
@@ -25,7 +25,7 @@
 
 SunPosition pos;
 
-AsyncStream<100> serial(&Serial, ';');
+//AsyncStream<100> serial(&Serial, ';');
 
 OneWire oneWire(ONE_WIRE_BUS);
 
@@ -112,48 +112,80 @@ int16_t flt_ads(uint8_t pin=0){ // функция фильтрации знач�
   return last_zn[pin];
 }
 
-struct Str {
+struct Send_data {
+  uint8_t mode;
   float temp[6];
   float tempIK;
   int16_t alfa;
   int16_t azim;
   float prs;
   int16_t speed_c;
-  int16_t angle[2];
+  int16_t srv_angle[2];
   int16_t speed_m[2];
   uint8_t mos[3];
   int16_t ads[4];
   byte crc;
 };
 
+struct Read_data {
+  uint8_t mode;
+  float cords[2];
+  uint32_t unix;
+  float srv_angle[2];
+  int16_t speed_c;
+  int16_t angle[2];
+  int16_t speed_m[2];
+  uint8_t mos[3];
+  byte crc;
+};
+
 void SendData(){ //функция отправки данных
-  Str buf;
-  mString<50> dataStr;
+  static Send_data buf;
+  //mString<50> dataStr;
   
-  dataStr+="n,t,"
-  for(uint8_t indx = 0; i < 6; i++){
+  buf.mode=mode;
+  //dataStr+="n,t,"
+  for(uint8_t indx = 0; indx < 6; indx++){
     buf.temp[indx]=ds_sensors.getTempCByIndex(indx);
-    dataStr+=buf.temp[indx];
+    //dataStr+=buf.temp[indx];
   }
 
-  dataStr+="i,"
-  buf.tempIK=ds_sensors.getTempCByIndex(indx);
-  dataStr+=buf.tempIK;
+  //dataStr+="i,"
+  buf.tempIK=mlx.readObjectTempC();
+  //dataStr+=buf.tempIK;
 
-  dataStr+=",b,"
-  buf.alfa=pos.altitude(indx);
+  //dataStr+=",b,"
+  buf.alfa=pos.altitude();
 
   // Сказать Лере дописать эту часть кода (дозаполнить структуру)
 
   byte crc = crc8((byte*)&buf, sizeof(buf) - 1);
   buf.crc = crc;
 
-  Serial.write((byte*)&buf, sizeof(buf))
+  Serial.write((byte*)&buf, sizeof(buf));
 }
 
 void Parser(){  //парсинг Serial переделать
-  GParser data(serial.buf, ',');
-  uint8_t dt_len=data.split();
+  static Read_data buf;
+
+  if (Serial.readBytes((byte*)&buf, sizeof(buf))) {
+
+    byte crc = crc8((byte*)&buf, sizeof(buf));
+
+    if (crc == 0) {
+
+      mode=buf.mode;
+
+      for (uint8_t i =0; i<2;i++) cords[i]=buf.cords[i];
+      
+      unix=buf.unix;
+
+      // дописать Лере (записать данные в переменые в зависимости от режима)
+    }else{
+      //запросить повтор пакета
+    }
+  }
+  /*uint8_t dt_len=data.split();
   if (data[0]=='f'){
     for(uint8_t i=1;i<dt_len;i++){
       char sim = data[i];
@@ -190,7 +222,7 @@ void Parser(){  //парсинг Serial переделать
         break;     
       }
     }
-  }
+  }*/
 }
 
 byte crc8(byte *buffer, byte size) { // функция вычисления crc
@@ -206,7 +238,7 @@ byte crc8(byte *buffer, byte size) { // функция вычисления crc
 }
 
 int16_t  Centri_speed(){
-  static uint32_t last_time=0 // дописать Лере
+  static uint32_t last_time=0; // дописать Лере
 }
 
 void setup() {
@@ -214,7 +246,7 @@ void setup() {
 
   Wire.begin(); 
 
-  for (uint8_t c = 0; c < 50; c++){
+  for (uint8_t c = 0; c < 50; c++){ // иниициализауия датчика
     if (mlx.begin()) break;
     delay(200);
   } 
@@ -242,8 +274,21 @@ void setup() {
 void loop() {
   flt_ads();
   dsGetTemp();
-  if (serial.available()) { 
-    Parser();
+  Parser();
+
+  switch (mode)
+  {
+  case 0:
+    /* code */
+    break;
+  case 1:
+    /* code */ //расписать работу для каждого режима
+    break;
+  case 2:
+    /* code */
+    break;
+  default:
+    break;
   }
 }
 
