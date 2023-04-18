@@ -3,11 +3,11 @@
 #include <OneWire.h>
 #include <Servo.h>
 #include "motor.h"
-
+#include <MS5611.h>
 #include <GyverTimers.h>// прерывания 
 
 //#include "mString.h"// библиотека быстрого String автор кода ленивый
-#include <GParser.h>//парсинг Serial
+//#include <GParser.h>//парсинг Serial
 //#include <AsyncStream.h>
 
 #include <TimeLib.h>
@@ -20,6 +20,9 @@
 #include <Adafruit_ADS1X15.h>//библиотека для работы с ADS1115 АЦП 
 
 #include "config.h"
+
+
+#define M A3 //пин датчика холла
 
 //using namespace IntroSatLib; // интросас https://github.com/Goldfor/IntroSatLib
 
@@ -55,6 +58,8 @@ int16_t srv_angle[2]={0,0}; //поставить начальные углы
 
 uint8_t trn_speed[3]={0,0,0};
 
+double referencePressure;//давление
+
 //Timer dsUpdateTmr(2000);
 
 /*
@@ -84,6 +89,13 @@ uint8_t DSInit(bool is_init = 0){ //функция инициализации ds
     }
   }
   return ds_count;
+}
+
+
+void checkSettings()
+{
+  Serial.print("Oversampling: ");
+  Serial.println(ms5611.getOversampling());
 }
 
 void dsGetTemp(){//хаха, я оставлю функцию, просто потому-что могу 
@@ -240,6 +252,9 @@ byte crc8(byte *buffer, byte size) { // функция вычисления crc
 void setup() {
   Serial.begin(SERIAL_SPEED);
 
+
+  pinMode(M, INPUT);
+
   Wire.begin(); 
 
   for (uint8_t c = 0; c < 50; c++){ // Инициализация датчика
@@ -250,6 +265,22 @@ void setup() {
   for (uint8_t c = 0; c < 50; c++){
     if (ms5611.begin()) break;
     delay(200);
+
+
+
+  Serial.println("Initialize MS5611 Sensor");
+ 
+  while(!ms5611.begin())
+  {
+    Serial.println("Could not find a valid MS5611 sensor, check wiring!");
+    delay(500);
+  }
+ 
+  // Get reference pressure for relative altitude
+  referencePressure = ms5611.readPressure();
+ 
+  // Check settings
+  checkSettings();
   }
 
   DSInit();
@@ -268,6 +299,66 @@ void setup() {
 }
 
 void loop() {
+
+//начало кода на частоту
+  uint32_t t1 = millis();
+
+  int mgn = digitalRead(M);
+  while (mgn == 1) {
+    mgn = digitalRead(M);
+  }
+  
+
+  uint32_t t2 = millis();
+  double v;
+  if (t2-t1!=0) {
+   v = 2/((t2-t1)*0.001);
+
+  }
+  
+  /*Serial.print("millis =");
+  Serial.println(millis());
+
+  Serial.print("mgn = ");
+  Serial.println(mgn);
+  */
+  
+  Serial.print("v = ");
+  Serial.println(v);
+
+  
+  delay(10);
+  //конец кода на частоту
+
+  // Read true temperature & Pressure
+  double realTemperature = ms5611.readTemperature();
+  long realPressure = ms5611.readPressure();
+ 
+  // Calculate altitude
+  float absoluteAltitude = ms5611.getAltitude(realPressure);
+  float relativeAltitude = ms5611.getAltitude(realPressure, referencePressure);
+ 
+  Serial.println("--");
+ 
+  Serial.print(", realTemp = ");
+  Serial.print(realTemperature);
+  Serial.println(" *C");
+ 
+  Serial.print(", realPressure = ");
+  Serial.print(realPressure);
+  Serial.println(" Pa");
+ 
+  Serial.print(" absoluteAltitude = ");
+  Serial.print(absoluteAltitude);
+  Serial.print(" m, relativeAltitude = ");
+  Serial.print(relativeAltitude);
+  Serial.println(" m");
+ 
+  delay(1000);
+
+
+
+   
   flt_ads();
   dsGetTemp();
   Parser();
