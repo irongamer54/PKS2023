@@ -9,7 +9,7 @@
 //#include "mString.h"// библиотека быстрого String автор кода ленивый
 //#include <GParser.h>//парсинг Serial
 //#include <AsyncStream.h>
-
+#include "centrifuge.h"
 #include <TimeLib.h>
 #include "timer.h" //библиотека таймера
 #include "SunPosition.h"//библиотека для определения положения солнца
@@ -20,9 +20,6 @@
 #include <Adafruit_ADS1X15.h>//библиотека для работы с ADS1115 АЦП 
 
 #include "config.h"
-
-
-#define M A3 //пин датчика холла
 
 //using namespace IntroSatLib; // интросас https://github.com/Goldfor/IntroSatLib
 
@@ -45,6 +42,8 @@ Servo angl_srv;
 
 Motor mtr1(MTR_F_1,MTR_B_1);//переименовать)
 Motor mtr2(MTR_F_2,MTR_B_2);//переименовать)
+
+Centifuge cntf(MAGN_PIN,COUNT_MAG);
 
 float cords[2] = {0,0};
 
@@ -89,13 +88,6 @@ uint8_t DSInit(bool is_init = 0){ //функция инициализации ds
     }
   }
   return ds_count;
-}
-
-
-void checkSettings()
-{
-  Serial.print("Oversampling: ");
-  Serial.println(ms5611.getOversampling());
 }
 
 void dsGetTemp(){//хаха, я оставлю функцию, просто потому-что могу 
@@ -253,7 +245,7 @@ void setup() {
   Serial.begin(SERIAL_SPEED);
 
 
-  pinMode(M, INPUT);
+  //pinMode(M, INPUT); я перенесу
 
   Wire.begin(); 
 
@@ -266,22 +258,9 @@ void setup() {
     if (ms5611.begin()) break;
     delay(200);
 
+  //referencePressure = ms5611.readPressure();
 
-
-  Serial.println("Initialize MS5611 Sensor");
- 
-  while(!ms5611.begin())
-  {
-    Serial.println("Could not find a valid MS5611 sensor, check wiring!");
-    delay(500);
-  }
- 
-  // Get reference pressure for relative altitude
-  referencePressure = ms5611.readPressure();
- 
-  // Check settings
-  checkSettings();
-  }
+  //checkSettings(); //нам не актуально
 
   DSInit();
   
@@ -298,8 +277,8 @@ void setup() {
   Timer0.enableISR();            
 }
 
-void loop() {
-
+/*
+void xz_chto_ito(){
 //начало кода на частоту
   uint32_t t1 = millis();
 
@@ -321,7 +300,7 @@ void loop() {
 
   Serial.print("mgn = ");
   Serial.println(mgn);
-  */
+  
   
   Serial.print("v = ");
   Serial.println(v);
@@ -355,10 +334,18 @@ void loop() {
   Serial.println(" m");
  
   delay(1000);
+  
+}
 
+void checkSettings()
+{
+  Serial.print("Oversampling: ");
+  Serial.println(ms5611.getOversampling());
+}
+*/
 
-
-   
+void loop() {
+  
   flt_ads();
   dsGetTemp();
   Parser();
