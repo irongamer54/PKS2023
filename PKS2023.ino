@@ -237,10 +237,6 @@ byte crc8(byte *buffer, byte size) { // функция вычисления crc
   return crc;
 }
 
-int16_t  Centri_speed(){// функция для вычисления скорости врашения камеры
-  static uint32_t last_time=0; // дописать Лере
-}
-
 void setup() {
   Serial.begin(SERIAL_SPEED);
 
