@@ -25,7 +25,8 @@
 #include "centrifuge.h"
 #include "config.h"
 
-//using namespace IntroSatLib; // интросас https://github.com/Goldfor/IntroSatLib
+//using namespace IntroSatLib; // интросас https://github.com/Goldfor/IntroSatLib https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
+
 
 SunPosition pos;
 
@@ -44,8 +45,7 @@ MS5611 ms5611;
 Servo otr_srv;
 Servo angl_srv;
 
-Motor mtr1(MTR_F_1,MTR_B_1);//переименовать)
-Motor mtr2(MTR_F_2,MTR_B_2);//переименовать)
+Motor cam_mtr(MTR_F_1,MTR_B_1);//переименовать)
 
 //Centifuge cntf(MAGN_PIN, COUNT_MAG); //пример 
 
@@ -148,9 +148,11 @@ struct Read_data {
 };
 
 void SendData(){ //функция отправки данных
+  static Timer tmr(SEND_DATA_DELAY);
   static Send_data buf;
+
+  if (tmr.ready()){
   //mString<50> dataStr;
-  
   buf.mode=mode;
   //dataStr+="n,t,"
   for(uint8_t indx = 0; indx < 6; indx++){
@@ -171,6 +173,7 @@ void SendData(){ //функция отправки данных
   buf.crc = crc;
 
   Serial.write((byte*)&buf, sizeof(buf));
+  }
 }
 
 void Parser(){  //парсинг Serial переделать
@@ -284,35 +287,6 @@ void setup() {
 
 /*
 void xz_chto_ito(){
-//начало кода на частоту
-  uint32_t t1 = millis();
-
-  int mgn = digitalRead(M);
-  while (mgn == 1) {
-    mgn = digitalRead(M);
-  }
-  
-
-  uint32_t t2 = millis();
-  double v;
-  if (t2-t1!=0) {
-   v = 2/((t2-t1)*0.001);
-
-  }
-  
-  /*Serial.print("millis =");
-  Serial.println(millis());
-
-  Serial.print("mgn = ");
-  Serial.println(mgn);
-  
-  
-  Serial.print("v = ");
-  Serial.println(v);
-
-  
-  delay(10);
-  //конец кода на частоту
 
   // Read true temperature & Pressure
   double realTemperature = ms5611.readTemperature();
@@ -349,19 +323,31 @@ void checkSettings()
 }
 */
 
+void standby(){
+  otr_srv.write(START_ANGL_1);
+  angl_srv.write(START_ANGL_2);
+  cam_mtr.setSpeed(START_SPEED);
+}
+
+void self_mode(){
+
+}
+
 void loop() {
   
   flt_ads();
   dsGetTemp();
   Parser();
 
+  SendData();
+
   switch (mode)
   {
   case 0:
     /* code */
-    break;
+    standby();
   case 1:
-    /* code */ //расписать работу для каждого режима
+    self_mode();
     break;
   case 2:
     hand_mode();
@@ -372,7 +358,6 @@ void loop() {
 }
 
 ISR(TIMER2_A) {
-  mtr1.newTick();//переименовать)
-  mtr2.newTick();//переименовать)
+  cam_mtr.newTick();//переименовать)
   // функцию для скорости центрифуги сюда Лере
 }
