@@ -1,15 +1,15 @@
 //основной код (он будет тут (когда нибуть(но это не точно)))
 #include <Wire.h>
 #include <OneWire.h>
-#include <Servo.h>
-#include "motor.h"
 
-#include <GyverTimers.h>// прерывания 
+#include <Servo.h>
+
+#include <GyverTimers.h> // прерывания 
 
 //#include "mString.h"// библиотека быстрого String автор кода ленивый
-#include <GParser.h>//парсинг Serial
+//#include <GParser.h>//парсинг Serial
 //#include <AsyncStream.h>
-#include "centrifuge.h"
+
 #include <TimeLib.h>
 #include "timer.h" //библиотека таймера
 #include "SunPosition.h"//библиотека для определения положения солнца
@@ -19,6 +19,10 @@
 #include <DallasTemperature.h>//библиотека для работы с ds18b20 датчиком температуры
 #include <Adafruit_ADS1X15.h>//библиотека для работы с ADS1115 АЦП 
 
+#include <Servo.h>
+
+#include "motor.h"
+#include "centrifuge.h"
 #include "config.h"
 
 //using namespace IntroSatLib; // интросас https://github.com/Goldfor/IntroSatLib
@@ -43,6 +47,8 @@ Servo angl_srv;
 Motor mtr1(MTR_F_1,MTR_B_1);//переименовать)
 Motor mtr2(MTR_F_2,MTR_B_2);//переименовать)
 
+//Centifuge cntf(MAGN_PIN, COUNT_MAG); //пример 
+
 float cords[2] = {0,0};
 
 uint32_t unix = 0; //поставить дату запуска
@@ -54,6 +60,8 @@ int16_t speeds[2] = {0,0};
 int16_t srv_angle[2]={0,0}; //поставить начальные углы
 
 uint8_t trn_speed[3]={0,0,0};
+
+double referencePressure;//давление
 
 //Timer dsUpdateTmr(2000);
 
@@ -180,11 +188,49 @@ void Parser(){  //парсинг Serial переделать
       
       unix=buf.unix;
 
-      // дописать Лере (записать данные в переменые в зависимости от режима) не забыть ограничивать поступившие значения 
+      // дописать Лере (записать данные в переменые в зависимости от режима)
     }else{
       //запросить повтор пакета
     }
   }
+  /*uint8_t dt_len=data.split();
+  if (data[0]=='f'){
+    for(uint8_t i=1;i<dt_len;i++){
+      char sim = data[i];
+      switch (sim)
+      {
+      case 'g':
+        cords[0]=data.getFloat(i+1);
+        cords[1]=data.getFloat(i+2);
+        i+=2;
+        break;
+      case 't':
+        unix=data.getInt(i+1);
+        i+=1;
+        break;
+      case 'm':
+        mode=data.getInt(i+1);
+        i+=1;
+        break;
+      case 's':
+        speeds[0]=data.getInt(i+1);
+        speeds[1]=data.getInt(i+2);
+        i+=2;
+        break;
+      case 'a':
+        srv_angle[0]=data.getInt(i+1);
+        srv_angle[1]=data.getInt(i+2);
+        i+=2;
+        break;
+      case 'r':
+        trn_speed[0]=data.getInt(i+1);
+        trn_speed[1]=data.getInt(i+2);
+        trn_speed[2]=data.getInt(i+3);
+        i+=3;
+        break;     
+      }
+    }
+  }*/
 }
 
 byte crc8(byte *buffer, byte size) { // функция вычисления crc
@@ -199,8 +245,9 @@ byte crc8(byte *buffer, byte size) { // функция вычисления crc
   return crc;
 }
 
-int16_t  Centri_speed(){// функция для вычисления скорости врашения камеры
-  static uint32_t last_time=0; // дописать Лере
+void pinSetup(){
+  pinMode(SRV_PIN_1, OUTPUT);
+  pinMode(SRV_PIN_1, OUTPUT);
 }
 
 void setup() {
@@ -225,9 +272,8 @@ void setup() {
     if (ads.begin()) break;
     delay(200);
   }
-  
-  pinMode(SRV_PIN_1, OUTPUT);
-  pinMode(SRV_PIN_2, OUTPUT);
+
+  pinSetup();
 
   otr_srv.attach(SRV_PIN_1);
   angl_srv.attach(SRV_PIN_2);
@@ -236,13 +282,75 @@ void setup() {
   Timer0.enableISR();            
 }
 
-void manual_mode(){
-  angl_srv.write(srv_angle[0]);
-  otr_srv.write(srv_angle[1]);
-  // полученые с STM данные подавать на моторы и т.п (Лерочка, ты справишься!) p.s я так на тебя весь код перекину)
+/*
+void xz_chto_ito(){
+//начало кода на частоту
+  uint32_t t1 = millis();
+
+  int mgn = digitalRead(M);
+  while (mgn == 1) {
+    mgn = digitalRead(M);
+  }
+  
+
+  uint32_t t2 = millis();
+  double v;
+  if (t2-t1!=0) {
+   v = 2/((t2-t1)*0.001);
+
+  }
+  
+  /*Serial.print("millis =");
+  Serial.println(millis());
+
+  Serial.print("mgn = ");
+  Serial.println(mgn);
+  
+  
+  Serial.print("v = ");
+  Serial.println(v);
+
+  
+  delay(10);
+  //конец кода на частоту
+
+  // Read true temperature & Pressure
+  double realTemperature = ms5611.readTemperature();
+  long realPressure = ms5611.readPressure();
+ 
+  // Calculate altitude
+  float absoluteAltitude = ms5611.getAltitude(realPressure);
+  float relativeAltitude = ms5611.getAltitude(realPressure, referencePressure);
+ 
+  Serial.println("--");
+ 
+  Serial.print(", realTemp = ");
+  Serial.print(realTemperature);
+  Serial.println(" *C");
+ 
+  Serial.print(", realPressure = ");
+  Serial.print(realPressure);
+  Serial.println(" Pa");
+ 
+  Serial.print(" absoluteAltitude = ");
+  Serial.print(absoluteAltitude);
+  Serial.print(" m, relativeAltitude = ");
+  Serial.print(relativeAltitude);
+  Serial.println(" m");
+ 
+  delay(1000);
+  
 }
 
+void checkSettings()
+{
+  Serial.print("Oversampling: ");
+  Serial.println(ms5611.getOversampling());
+}
+*/
+
 void loop() {
+  
   flt_ads();
   dsGetTemp();
   Parser();
@@ -256,7 +364,7 @@ void loop() {
     /* code */ //расписать работу для каждого режима
     break;
   case 2:
-    manual_mode();
+    hand_mode();
     break;
   default:
     break;
@@ -266,6 +374,5 @@ void loop() {
 ISR(TIMER2_A) {
   mtr1.newTick();//переименовать)
   mtr2.newTick();//переименовать)
-  cntr.newTick();
   // функцию для скорости центрифуги сюда Лере
 }

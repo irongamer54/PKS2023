@@ -1,13 +1,13 @@
 #pragma once
+
 #include <Arduino.h>
-class Centifuge {
+
+class Centifuge {// функция для вычисления скорости врашения камеры
     public:
-        int16_t  CentriSpeed(){
-            return speed;
         Centifuge(uint8_t npin, uint8_t ncount=1) {
             pin=npin;
             count_mag=ncount;
-            pinMode(pin, INPUT);
+            pinMode(pin, OUTPUT);
         }
 
         int16_t  getSpeed(){
@@ -17,7 +17,7 @@ class Centifuge {
             return speed
         }
 
-        void newTick(){ //
+        void newTick(){ 
             if (digitalRead(pin)){
                 if(state==0){
                     delta_time=millis()-last_time;
@@ -28,9 +28,12 @@ class Centifuge {
         }
 
     private:
+        uint8_t pin;
+        uint8_t count_mag=1;
+
+        bool state=0;
+        uint16_t delta_time=1;
         uint32_t last_time=0;
-        int16_t speed=0;
-}
 
         float speed=0;
 }
