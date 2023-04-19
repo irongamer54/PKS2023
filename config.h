@@ -13,7 +13,7 @@
 #define MTR_B_2 1 //поставить актуальный
 
 #define MAGN_PIN A3 //пин датчика холла
-
+#define COUNT_MAG 1
 ////////********     Интервалы для таймеров    ********////////
 #define DS_UPDATE_TIME 2000
 #define ADS_UPDATE_TIME 2000
