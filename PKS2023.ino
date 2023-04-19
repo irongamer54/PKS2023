@@ -1,15 +1,15 @@
 //основной код (он будет тут (когда нибуть(но это не точно)))
 #include <Wire.h>
 #include <OneWire.h>
+
 #include <Servo.h>
-#include "motor.h"
-#include <MS5611.h>
-#include <GyverTimers.h>// прерывания 
+
+#include <GyverTimers.h> // прерывания 
 
 //#include "mString.h"// библиотека быстрого String автор кода ленивый
 //#include <GParser.h>//парсинг Serial
 //#include <AsyncStream.h>
-#include "centrifuge.h"
+
 #include <TimeLib.h>
 #include "timer.h" //библиотека таймера
 #include "SunPosition.h"//библиотека для определения положения солнца
@@ -19,6 +19,10 @@
 #include <DallasTemperature.h>//библиотека для работы с ds18b20 датчиком температуры
 #include <Adafruit_ADS1X15.h>//библиотека для работы с ADS1115 АЦП 
 
+#include <Servo.h>
+
+#include "motor.h"
+#include "centrifuge.h"
 #include "config.h"
 
 //using namespace IntroSatLib; // интросас https://github.com/Goldfor/IntroSatLib
@@ -43,7 +47,7 @@ Servo angl_srv;
 Motor mtr1(MTR_F_1,MTR_B_1);//переименовать)
 Motor mtr2(MTR_F_2,MTR_B_2);//переименовать)
 
-Centifuge cntf(MAGN_PIN,COUNT_MAG);
+//Centifuge cntf(MAGN_PIN, COUNT_MAG); //пример 
 
 float cords[2] = {0,0};
 
@@ -241,11 +245,13 @@ byte crc8(byte *buffer, byte size) { // функция вычисления crc
   return crc;
 }
 
+void pinSetup(){
+  pinMode(SRV_PIN_1, OUTPUT);
+  pinMode(SRV_PIN_1, OUTPUT);
+}
+
 void setup() {
   Serial.begin(SERIAL_SPEED);
-
-
-  //pinMode(M, INPUT); я перенесу
 
   Wire.begin(); 
 
@@ -257,10 +263,7 @@ void setup() {
   for (uint8_t c = 0; c < 50; c++){
     if (ms5611.begin()) break;
     delay(200);
-
-  //referencePressure = ms5611.readPressure();
-
-  //checkSettings(); //нам не актуально
+  }
 
   DSInit();
   
@@ -269,6 +272,8 @@ void setup() {
     if (ads.begin()) break;
     delay(200);
   }
+
+  pinSetup();
 
   otr_srv.attach(SRV_PIN_1);
   angl_srv.attach(SRV_PIN_2);

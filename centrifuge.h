@@ -7,6 +7,7 @@ class Centifuge {// функция для вычисления скорости 
         Centifuge(uint8_t npin, uint8_t ncount=1) {
             pin=npin;
             count_mag=ncount;
+            pinMode(pin, OUTPUT);
         }
 
         int16_t  getSpeed(){
@@ -16,7 +17,7 @@ class Centifuge {// функция для вычисления скорости 
             return speed
         }
 
-        void newTick(){ //
+        void newTick(){ 
             if (digitalRead(pin)){
                 if(state==0){
                     delta_time=millis()-last_time;
@@ -36,34 +37,3 @@ class Centifuge {// функция для вычисления скорости 
 
         float speed=0;
 }
-/*
-//начало кода на частоту
-  uint32_t t1 = millis();
-
-  int mgn = digitalRead(M);
-  while (mgn == 1) {
-    mgn = digitalRead(M);
-  }
-  
-
-  uint32_t t2 = millis();
-  double v;
-  if (t2-t1!=0) {
-   v = 2/((t2-t1)*0.001);
-
-  }
-  
-  /*Serial.print("millis =");
-  Serial.println(millis());
-
-  Serial.print("mgn = ");
-  Serial.println(mgn);
-  
-  
-  Serial.print("v = ");
-  Serial.println(v);
-
-  
-  delay(10);
-  //конец кода на частоту
-  */
