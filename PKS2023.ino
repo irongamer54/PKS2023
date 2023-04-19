@@ -9,7 +9,7 @@
 //#include "mString.h"// библиотека быстрого String автор кода ленивый
 #include <GParser.h>//парсинг Serial
 //#include <AsyncStream.h>
-
+#include "centrifuge.h"
 #include <TimeLib.h>
 #include "timer.h" //библиотека таймера
 #include "SunPosition.h"//библиотека для определения положения солнца
@@ -225,6 +225,9 @@ void setup() {
     if (ads.begin()) break;
     delay(200);
   }
+  
+  pinMode(SRV_PIN_1, OUTPUT);
+  pinMode(SRV_PIN_2, OUTPUT);
 
   otr_srv.attach(SRV_PIN_1);
   angl_srv.attach(SRV_PIN_2);
@@ -263,5 +266,6 @@ void loop() {
 ISR(TIMER2_A) {
   mtr1.newTick();//переименовать)
   mtr2.newTick();//переименовать)
+  cntr.newTick();
   // функцию для скорости центрифуги сюда Лере
 }
