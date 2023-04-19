@@ -9,11 +9,9 @@
 #define MTR_F_1 1 //поставить актуальный
 #define MTR_B_1 1 //поставить актуальный
 
-#define MTR_F_2 1 //поставить актуальный
-#define MTR_B_2 1 //поставить актуальный
 #define COUNT_MAG 2 // количество магнитов на центрифуге
 
-#define MAGN_PIN A3 //пин датчика холла
+#define MAGN_PIN 13//пин датчика холла
 #define COUNT_MAG 1 //количество магнитов
 
 ////////********     Интервалы для таймеров    ********////////
@@ -27,16 +25,24 @@
 
 ////////********     Начальные значения    ********////////
 
-#define START_ANGL_1 0
-#define START_ANGL_2 0
+#define START_OTR_ANGL 0 // угл для закрытого отражателя
+#define START_OTR2_ANGL 0 // угл для закрытого 2 отражателя
 #define START_SPEED 0
+
+#define OPEN_OTR_ANGL 90 // угл для открытого отражателя 
+#define OPEN_OTR2_ANGL 45 // угл для открытого 2 отражателя 
+
+#define CHNG_MODE_TIME 2000 //частота изменения режима работы камеры
+#define CHNG_DIR 500 //смена направления камеры
+
+#define CNTR_SPEED 100 //скорость врашения камеры (ШИМ -100 - 100)
 
 ////////********     Начальные значения    ********////////
 
 #define EXP_START_ALTITUDE 15000 // высота начала эксперенмента 
-#define EXP_START_TIME  //время начала эксперемента (Поставить верное в секундах)
+#define EXP_START_TIME  213 //время начала эксперемента (Поставить верное в секундах)
 
 #define SAFE_START_ALTITUDE 2000 // Режим для защиты от внешних факторов
-#define SAFE_START_TIME 3600 // 
+#define SAFE_START_TIME 3600 // vvf
 
 #define MAX_EL_TEMP 70 //максимальная температура электроники 
