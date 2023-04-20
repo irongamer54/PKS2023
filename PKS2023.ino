@@ -116,7 +116,8 @@ struct Send_data {
   uint8_t mode;
   float temp[6];
   float tempIK;
-  float prs;
+  int32_t prs;
+  int16_t alt;
   int16_t speed_c;
   int16_t srv_angle[2];
   int16_t speed_m;
@@ -136,21 +137,24 @@ void SendData() { //функция отправки данных
   static Send_data buf;
 
   if (tmr.ready()) {
-    //mString<50> dataStr;
+ 
     buf.mode = mode;
-    //dataStr+="n,t,"
     for (uint8_t indx = 0; indx < 6; indx++) {
       buf.temp[indx] = ds_sensors.getTempCByIndex(indx);
-      //dataStr+=buf.temp[indx];
     }
 
-    //dataStr+="i,"
     buf.tempIK = mlx.readObjectTempC();
-    //dataStr+=buf.tempIK;
 
-    //dataStr+=",b,"
-    //buf.alfa=pos.altitude();
+    buf.srv_angle[0]=otr_srv.read();
+    buf.srv_angle[1]=otr2_srv.read();
 
+    buf.speed_m=cam_mtr.getSpeed();
+
+    buf.prs=ms5611.readPressure();
+    buf.alt=ms5611.getAltitude(buf.prs);
+
+    buf.speed_c=centri.getSpeed();
+    // 6 ds, 2 угла серв, ИК, давление, скорость центрифуги, обороты мотора, режим работы
     // Сказать Лере дописать эту часть кода (дозаполнить структуру)
 
     byte crc = crc8((byte*)&buf, sizeof(buf) - 1);
@@ -168,56 +172,13 @@ void Parser() { //парсинг Serial переделать
     byte crc = crc8((byte*)&buf, sizeof(buf));
 
     if (crc == 0) {
-
       mode = buf.mode;
-
-      //for (uint8_t i =0; i<2;i++) cords[i]=buf.cords[i];
-
-      //unix=buf.unix;
-
+      
       // дописать Лере (записать данные в переменые в зависимости от режима)
     } else {
-      //запросить повтор пакета
+      //запросить повтор пакета 
     }
   }
-  /*uint8_t dt_len=data.split();
-    if (data[0]=='f'){
-    for(uint8_t i=1;i<dt_len;i++){
-      char sim = data[i];
-      switch (sim)
-      {
-      case 'g':
-        cords[0]=data.getFloat(i+1);
-        cords[1]=data.getFloat(i+2);
-        i+=2;
-        break;
-      case 't':
-        unix=data.getInt(i+1);
-        i+=1;
-        break;
-      case 'm':
-        mode=data.getInt(i+1);
-        i+=1;
-        break;
-      case 's':
-        speeds[0]=data.getInt(i+1);
-        speeds[1]=data.getInt(i+2);
-        i+=2;
-        break;
-      case 'a':
-        srv_angle[0]=data.getInt(i+1);
-        srv_angle[1]=data.getInt(i+2);
-        i+=2;
-        break;
-      case 'r':
-        trn_speed[0]=data.getInt(i+1);
-        trn_speed[1]=data.getInt(i+2);
-        trn_speed[2]=data.getInt(i+3);
-        i+=3;
-        break;
-      }
-    }
-    }*/
 }
 
 byte crc8(byte *buffer, byte size) { // функция вычисления crc
@@ -268,44 +229,6 @@ void setup() {
   Timer0.setFrequency(40000);
   Timer0.enableISR();
 }
-
-/*
-  void xz_chto_ito(){
-
-  // Read true temperature & Pressure
-  double realTemperature = ms5611.readTemperature();
-  long realPressure = ms5611.readPressure();
-
-  // Calculate altitude
-  float absoluteAltitude = ms5611.getAltitude(realPressure);
-  float relativeAltitude = ms5611.getAltitude(realPressure, referencePressure);
-
-  Serial.println("--");
-
-  Serial.print(", realTemp = ");
-  Serial.print(realTemperature);
-  Serial.println(" *C");
-
-  Serial.print(", realPressure = ");
-  Serial.print(realPressure);
-  Serial.println(" Pa");
-
-  Serial.print(" absoluteAltitude = ");
-  Serial.print(absoluteAltitude);
-  Serial.print(" m, relativeAltitude = ");
-  Serial.print(relativeAltitude);
-  Serial.println(" m");
-
-  delay(1000);
-
-  }
-
-  void checkSettings()
-  {
-  Serial.print("Oversampling: ");
-  Serial.println(ms5611.getOversampling());
-  }
-*/
 
 void standby() {
 
