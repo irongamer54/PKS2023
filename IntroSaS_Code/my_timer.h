@@ -1,4 +1,5 @@
-#pragma once
+#ifndef TIMER_H
+#define TIMER_H
 #include <Arduino.h>
 class Timer {
   public:
@@ -16,9 +17,10 @@ class Timer {
         tmr = millis();
         return true;
       }
-      return false;  
+      return false;
     }
   private:
     uint32_t tmr = 0;
     uint16_t prd = 0;
 };
+#endif

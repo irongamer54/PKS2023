@@ -47,7 +47,7 @@ Centrifuge centri(MAGN_PIN, COUNT_MAG); //пример
 
 uint8_t mode = 0;
 
-int16_t speeds[2] = {0, 0};
+int16_t speed_m = 0;
 
 int16_t srv_angle[2] = {0, 0}; //поставить начальные углы
 
@@ -73,6 +73,7 @@ void printAddress(DeviceAddress deviceAddress) { // функция вывода 
 }
 
 uint8_t DSInit(bool is_init = 0) { //функция инициализации ds18b20
+  delay(1000);
   uint8_t ds_count = ds_sensors.getDeviceCount();
   if (!is_init) {
     dsUnique = new DeviceAddress[ds_count];
@@ -111,7 +112,7 @@ int16_t flt_ads(uint8_t pin = 0) { // функция фильтрации зна
   }
   return last_zn[pin];
 }
-
+#pragma pack(push, 1)
 struct Send_data {
   uint8_t mode;
   float temp[6];
@@ -123,14 +124,16 @@ struct Send_data {
   int16_t speed_m;
   byte crc;
 };
+#pragma pack(pop)
 
+#pragma pack(push, 1)
 struct Read_data {
   uint8_t mode;
   float srv_angle[2];
-  int16_t speed_c;
-  int16_t speed_m[2];
+  int16_t speed_m;
   byte crc;
 };
+#pragma pack(pop)
 
 void SendData() { //функция отправки данных
   static Timer tmr(SEND_DATA_DELAY);
@@ -141,6 +144,7 @@ void SendData() { //функция отправки данных
     buf.mode = mode;
     for (uint8_t indx = 0; indx < 6; indx++) {
       buf.temp[indx] = ds_sensors.getTempCByIndex(indx);
+      //Serial.println(ds_sensors.getTempCByIndex(indx));
     }
 
     buf.tempIK = mlx.readObjectTempC();
@@ -161,7 +165,7 @@ void SendData() { //функция отправки данных
     buf.crc = crc;
 
     Serial.write((byte*)&buf, sizeof(buf));
-    Serial.println("Data_SEND");
+    //Serial.println("Data_SEND");
   }
 }
 
@@ -174,8 +178,8 @@ void Parser() { //парсинг Serial переделать
 
     if (crc == 0) {
       mode = buf.mode;
-
-      // дописать Лере (записать данные в переменые в зависимости от режима)
+      for(uint8_t i=0;i<2;i++) srv_angle[i]= buf.srv_angle[i]; 
+      speed_m = buf.speed_m
     } else {
       //запросить повтор пакета
     }
@@ -252,68 +256,56 @@ void setup() {
   Serial.begin(SERIAL_SPEED);
   delay(1000);
   Wire.begin();
-  Serial.println("Start1");
+  //Serial.println("Start1");
   delay(1000);
   for (uint8_t c = 0; c < 5; c++) { // Инициализация датчика
     if (mlx.begin()) break;
     Serial.println("MLX NOT START");
     delay(200);
   }
-  Serial.println("Start1");
+  //Serial.println("Start1");
 
   for (uint8_t c = 0; c < 50; c++) {
     if (ms5611.begin()) break;
     Serial.println("ADS NOT START");
     delay(200);
   }
-  Serial.println("Start1");
+  //Serial.println("Start1");
 
   DSInit();
+  
   delay(1000);
-  Serial.println("Start1");
+  //Serial.println("Start1");
   ads.setGain(GAIN_TWOTHIRDS);
   for (uint8_t c = 0; c < 50; c++) {
     if (ads.begin()) break;
     Serial.println("ADS NOT START");
     delay(200);
   }
-  Serial.println("Start1");
+  //Serial.println("Start1");
   pinSetup();
   delay(1000);
-  otr_srv.attach(A0);
+  otr_srv.attach(SRV_PIN_1);
   delay(1000);
-  otr2_srv.attach(A1);
-  delay(1000);
-  Timer2.setFrequency(40000);
-  Timer2.enableISR();
+  otr2_srv.attach(SRV_PIN_2);
+  delay(10000);
+  //Timer1.setFrequency(40000);
+  //Timer1.enableISR();
 
-  Serial.println("Start");
+  //Serial.println("Start");
 }
 
 void loop() {
-  /*delay(1000);
-  static Timer tmr(2000);
-  static int16_t dr = 90;
-  if (tmr.ready()) {
-    dr = abs(dr - 90);
-    
-    Serial.println(dr);
-  }
-  otr_srv.write(dr);
-  otr2_srv.write(dr);
-  delay(500);*/
-
-  //cam_mtr.setSpeed(START_SPEED);
- flt_ads();
+  flt_ads();
   dsGetTemp();
   //Parser();
-  //SendData();
+  SendData();
 
   switch (mode)
   {
     case 0:
       /* code*/
-      standby();
+      //standby();
       break;
     case 1:
       self_mode();
@@ -324,11 +316,7 @@ void loop() {
     default:
       break;
   }
-   
-}
 
-ISR(TIMER2_A) {
-  cam_mtr.newTick();//переименовать)
+  cam_mtr.newTick();
   centri.newTick();
-  // функцию для скорости центрифуги сюда Лере
 }
