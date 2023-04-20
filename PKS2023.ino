@@ -137,7 +137,7 @@ void SendData() { //функция отправки данных
   static Send_data buf;
 
   if (tmr.ready()) {
- 
+
     buf.mode = mode;
     for (uint8_t indx = 0; indx < 6; indx++) {
       buf.temp[indx] = ds_sensors.getTempCByIndex(indx);
@@ -145,15 +145,15 @@ void SendData() { //функция отправки данных
 
     buf.tempIK = mlx.readObjectTempC();
 
-    buf.srv_angle[0]=otr_srv.read();
-    buf.srv_angle[1]=otr2_srv.read();
+    buf.srv_angle[0] = otr_srv.read();
+    buf.srv_angle[1] = otr2_srv.read();
 
-    buf.speed_m=cam_mtr.getSpeed();
+    buf.speed_m = cam_mtr.getSpeed();
 
-    buf.prs=ms5611.readPressure();
-    buf.alt=ms5611.getAltitude(buf.prs);
+    buf.prs = ms5611.readPressure();
+    buf.alt = ms5611.getAltitude(buf.prs);
 
-    buf.speed_c=centri.getSpeed();
+    buf.speed_c = centri.getSpeed();
     // 6 ds, 2 угла серв, ИК, давление, скорость центрифуги, обороты мотора, режим работы
     // Сказать Лере дописать эту часть кода (дозаполнить структуру)
 
@@ -161,6 +161,7 @@ void SendData() { //функция отправки данных
     buf.crc = crc;
 
     Serial.write((byte*)&buf, sizeof(buf));
+    Serial.println("Data_SEND");
   }
 }
 
@@ -173,10 +174,10 @@ void Parser() { //парсинг Serial переделать
 
     if (crc == 0) {
       mode = buf.mode;
-      
+
       // дописать Лере (записать данные в переменые в зависимости от режима)
     } else {
-      //запросить повтор пакета 
+      //запросить повтор пакета
     }
   }
 }
@@ -194,44 +195,13 @@ byte crc8(byte *buffer, byte size) { // функция вычисления crc
 }
 
 void pinSetup() {
-  pinMode(SRV_PIN_1, OUTPUT);
-  pinMode(SRV_PIN_1, OUTPUT);
+  //pinMode(SRV_PIN_1, OUTPUT);
+  //pinMode(SRV_PIN_2, OUTPUT);
+  pinMode(2, OUTPUT);
 }
 
-void setup() {
-  Serial.begin(SERIAL_SPEED);
-
-  Wire.begin();
-
-  for (uint8_t c = 0; c < 50; c++) { // Инициализация датчика
-    if (mlx.begin()) break;
-    delay(200);
-  }
-
-  for (uint8_t c = 0; c < 50; c++) {
-    if (ms5611.begin()) break;
-    delay(200);
-  }
-
-  DSInit();
-
-  ads.setGain(GAIN_TWOTHIRDS);
-  for (uint8_t c = 0; c < 50; c++) {
-    if (ads.begin()) break;
-    delay(200);
-  }
-
-  pinSetup();
-
-  otr_srv.attach(SRV_PIN_1);
-  otr2_srv.attach(SRV_PIN_2);
-
-  Timer0.setFrequency(40000);
-  Timer0.enableISR();
-}
 
 void standby() {
-
   otr_srv.write(START_OTR_ANGL);
   otr2_srv.write(START_OTR2_ANGL);
   cam_mtr.setSpeed(START_SPEED);
@@ -273,22 +243,78 @@ void self_mode() {
   }
 }
 
-void hand_mode(){
-  Serial.print("ПРописать ");// нужно поработать ручками 
+void hand_mode() {
+  Serial.print("ПРописать ");// нужно поработать ручками
+}
+
+void setup() {
+  delay(1000);
+  Serial.begin(SERIAL_SPEED);
+  delay(1000);
+  Wire.begin();
+  Serial.println("Start1");
+  delay(1000);
+  for (uint8_t c = 0; c < 5; c++) { // Инициализация датчика
+    if (mlx.begin()) break;
+    Serial.println("MLX NOT START");
+    delay(200);
+  }
+  Serial.println("Start1");
+
+  for (uint8_t c = 0; c < 50; c++) {
+    if (ms5611.begin()) break;
+    Serial.println("ADS NOT START");
+    delay(200);
+  }
+  Serial.println("Start1");
+
+  DSInit();
+  delay(1000);
+  Serial.println("Start1");
+  ads.setGain(GAIN_TWOTHIRDS);
+  for (uint8_t c = 0; c < 50; c++) {
+    if (ads.begin()) break;
+    Serial.println("ADS NOT START");
+    delay(200);
+  }
+  Serial.println("Start1");
+  pinSetup();
+  delay(1000);
+  otr_srv.attach(A0);
+  delay(1000);
+  otr2_srv.attach(A1);
+  delay(1000);
+  Timer2.setFrequency(40000);
+  Timer2.enableISR();
+
+  Serial.println("Start");
 }
 
 void loop() {
+  /*delay(1000);
+  static Timer tmr(2000);
+  static int16_t dr = 90;
+  if (tmr.ready()) {
+    dr = abs(dr - 90);
+    
+    Serial.println(dr);
+  }
+  otr_srv.write(dr);
+  otr2_srv.write(dr);
+  delay(500);*/
 
-  flt_ads();
+  //cam_mtr.setSpeed(START_SPEED);
+ flt_ads();
   dsGetTemp();
-  Parser();
-  SendData();
+  //Parser();
+  //SendData();
 
   switch (mode)
   {
     case 0:
-      /* code */
+      /* code*/
       standby();
+      break;
     case 1:
       self_mode();
       break;
@@ -298,6 +324,7 @@ void loop() {
     default:
       break;
   }
+   
 }
 
 ISR(TIMER2_A) {
