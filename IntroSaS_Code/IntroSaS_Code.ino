@@ -1,13 +1,22 @@
 #include <IS_Bluetooth.h> 
 #include <LightSensor.h>
+#include<Wire.h>
 
-#include <Servo.h> 
+#define PID_INTEGER
+#include <GyverPID.h>
 
+#include <AmperkaServo.h>
+
+#include <INA219_WE.h> //https://compacttool.ru/datchik-napryazheniya-i-toka-na-chipe-ina219
 #include "my_timer.h" 
+
+#include "config.h"
 
 using namespace IntroSatLib;
 
-Servo srv_z;
+AmperkaServo srv_z;
+
+INA219_WE ina219(INA_ADDR);
 
 LightSensor light_m(Wire, MASTER_ADDR);
 LightSensor light_r(Wire, RIGHT_ADDR);
@@ -28,7 +37,7 @@ int16_t servo_a[3] = { 0, 0, 0 };
 int16_t ms = 0; 
 float pwr=0;//мощность на СП
 
-
+GyverPID regulator(kP, kI, kD, 200);
  
 #pragma pack(push, 1)
 struct Read_data { 
@@ -99,37 +108,37 @@ void Logging(){
       Serial2.print(ds_t[i]);
       Serial2.print(";");
     }
-    Serial2.print(" IK_Temp: ")
+    Serial2.print(" IK_Temp: ");
     Serial2.print(ik);
     Serial2.print(";");
 
-    Serial2.print(" Pres: ")
+    Serial2.print(" Pres: ");
     Serial2.print(press);
     Serial2.print(";");
 
-    Serial2.print(" Alt: ")
+    Serial2.print(" Alt: ");
     Serial2.print(altitude);
     Serial2.print(";");
 
-    Serial2.print(" Azi: ")
+    Serial2.print(" Azi: ");
     Serial2.print(azi);
     Serial2.print(";");
 
     for(uint8_t i=0; i<2; i++){
-      Serial2.print(" Srv")
+      Serial2.print(" Srv");
       Serial2.print(i+1);
-      Serial2.print(": ")
-      Serial2.print(servo_a);
+      Serial2.print(": ");
+      Serial2.print(servo_a[i]);
       Serial2.print(";");
     }
     
-    Serial2.print(" Mtr: ")
+    Serial2.print(" Mtr: ");
     Serial2.print(ms);
     Serial2.print(";");
 
-    Serial2.print(" Pwr: ")
+    Serial2.print(" Pwr: ");
     Serial2.print(pwr);
-    Serial2.print(";");
+    Serial2.println(";");
     
   }
 }
@@ -147,37 +156,37 @@ void LoRa_Send(){
       Serial3.print(ds_t[i]);
       Serial3.print(";");
     }
-    Serial3.print(" IK_Temp: ")
+    Serial3.print(" IK_Temp: ");
     Serial3.print(ik);
     Serial3.print(";");
 
-    Serial3.print(" Pres: ")
+    Serial3.print(" Pres: ");
     Serial3.print(press);
     Serial3.print(";");
 
-    Serial3.print(" Alt: ")
+    Serial3.print(" Alt: ");
     Serial3.print(altitude);
     Serial3.print(";");
 
-    Serial3.print(" Azi: ")
+    Serial3.print(" Azi: ");
     Serial3.print(azi);
     Serial3.print(";");
 
     for(uint8_t i=0; i<2; i++){
-      Serial3.print(" Srv")
+      Serial3.print(" Srv");
       Serial3.print(i+1);
-      Serial3.print(": ")
-      Serial3.print(servo_a);
+      Serial3.print(": ");
+      Serial3.print(servo_a[i]);
       Serial3.print(";");
     }
     
-    Serial2.print(" Mtr: ")
+    Serial2.print(" Mtr: ");
     Serial2.print(ms);
     Serial2.print(";");
 
-    Serial2.print(" Pwr: ")
+    Serial2.print(" Pwr: ");
     Serial2.print(pwr);
-    Serial2.print(";");
+    Serial2.println(";");
     
   }
 }
@@ -191,6 +200,31 @@ float azimut(){
   return azim;
 }
 
+void sun_orient(){
+  static Timer tmr(200);
+  if(tmr.ready()){
+  regulator.input = azimut();
+  srv_z.writeSpeed(regulator.getResultTimer());
+  }
+}
+
+void standby(){
+  srv_z.write(0);
+}
+
+void selfMode(){
+  sun_orient();
+}
+
+void thermReg(){
+  //написать лере подогрев акб
+}
+void handMode(){
+  // расписать подачу данных напрямую
+
+}
+
+////////////////////////////    SETUP    ////////////////////////////
 void setup() { 
   delay(500);
 
@@ -203,23 +237,40 @@ void setup() {
   Serial3.begin(57600); 
   delay(1000);
 
-  srv_z.attach(SRV_PIN);
+  srv_z.attach(SRV_PIN, 544, 2400);
   delay(500);
 
   Wire.begin();
   delay(500);
+
+  for (uint8_t c = 0; c < 5; c++) { // Инициализация датчика
+    if (ina219.init()) break;
+    Serial2.println("INA NOT START");
+    Serial2.println("INA NOT START");
+    delay(200);
+  }
+  ina219.setADCMode(SAMPLE_MODE_64); // 128 выборок для усреднения измерений по току
+  ina219.setPGain(PG_160); // измеряем ток в пределах 400 мА
+  ina219.setBusRange(BRNG_16); // напряжение до 16 В
 
   light_m.Init();
   light_r.Init();
   light_d.Init();
   light_l.Init();
   delay(500);
+  regulator.setDirection(NORMAL);
+  regulator.setLimits(0, 255);
+  regulator.setpoint = 0;
 } 
 
+////////////////////////////    LOOP    ////////////////////////////
 void loop() { 
+  //thermReg();
   Parser(); 
   Logging();
   LoRa_Send();
+
+  pwr=ina219.getBusPower();
 
   azi=azimut();
 
@@ -229,10 +280,10 @@ void loop() {
     standby();
     break;
   case 1:
-    /* code */
+    selfMode();
     break;
   case 2:
-    /* code */
+    handMode();
     break;
   default:
     break;

@@ -17,7 +17,6 @@
 #define ADS_UPDATE_TIME 2000
 #define SEND_DATA_DELAY 2000
 
-
 #define COUNT_FLTR 10   //количество фильтраций
 #define SERIAL_SPEED 9600 
 

@@ -112,6 +112,7 @@ int16_t flt_ads(uint8_t pin = 0) { // функция фильтрации зна
   }
   return last_zn[pin];
 }
+
 #pragma pack(push, 1)
 struct Send_data {
   uint8_t mode;
@@ -251,6 +252,7 @@ void hand_mode() {
   Serial.print("ПРописать ");// нужно поработать ручками
 }
 
+////////////////////////////    SETUP    ////////////////////////////
 void setup() {
   delay(1000);
   Serial.begin(SERIAL_SPEED);
@@ -295,6 +297,8 @@ void setup() {
   //Serial.println("Start");
 }
 
+
+////////////////////////////    LOOP    ////////////////////////////
 void loop() {
   flt_ads();
   dsGetTemp();
@@ -316,7 +320,5 @@ void loop() {
     default:
       break;
   }
-
-  cam_mtr.newTick();
   centri.newTick();
 }
