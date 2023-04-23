@@ -93,6 +93,7 @@ void dsGetTemp() { //хаха, я оставлю функцию, просто п
 }
 
 int16_t flt_ads(uint8_t pin = 0) { // функция фильтрации значений с ацп
+
   static Timer tmr(ADS_UPDATE_TIME / COUNT_FLTR); //А вот эту функцию трогать не буду)))
   static int16_t sum[4] = {0, 0, 0, 0};
   static uint8_t count = 1;
@@ -180,7 +181,7 @@ void Parser() { //парсинг Serial переделать
     if (crc == 0) {
       mode = buf.mode;
       for(uint8_t i=0;i<2;i++) srv_angle[i]= buf.srv_angle[i]; 
-      speed_m = buf.speed_m
+      speed_m = buf.speed_m;
     } else {
       //запросить повтор пакета
     }
@@ -204,7 +205,6 @@ void pinSetup() {
   //pinMode(SRV_PIN_2, OUTPUT);
   pinMode(2, OUTPUT);
 }
-
 
 void standby() {
   otr_srv.write(START_OTR_ANGL);
@@ -250,6 +250,7 @@ void self_mode() {
 
 void hand_mode() {
   Serial.print("ПРописать ");// нужно поработать ручками
+
 }
 
 ////////////////////////////    SETUP    ////////////////////////////
@@ -272,29 +273,24 @@ void setup() {
     Serial.println("ADS NOT START");
     delay(200);
   }
-  //Serial.println("Start1");
 
   DSInit();
   
   delay(1000);
-  //Serial.println("Start1");
+
   ads.setGain(GAIN_TWOTHIRDS);
   for (uint8_t c = 0; c < 50; c++) {
     if (ads.begin()) break;
     Serial.println("ADS NOT START");
     delay(200);
   }
-  //Serial.println("Start1");
+
   pinSetup();
   delay(1000);
   otr_srv.attach(SRV_PIN_1);
   delay(1000);
   otr2_srv.attach(SRV_PIN_2);
   delay(10000);
-  //Timer1.setFrequency(40000);
-  //Timer1.enableISR();
-
-  //Serial.println("Start");
 }
 
 
@@ -304,21 +300,27 @@ void loop() {
   dsGetTemp();
   //Parser();
   SendData();
-
+  int32_t prs = ms5611.readPressure();
+  int32_t alt =  ms5611.getAltitude(prs);
+  if(alt>10000){
+    mode=1;
+  }else{
+    mode=0;
+  }
   switch (mode)
   {
     case 0:
       /* code*/
-      //standby();
+     // standby();
       break;
     case 1:
       self_mode();
       break;
     case 2:
-      hand_mode();
+     // hand_mode();
       break;
     default:
       break;
   }
-  centri.newTick();
+  //centri.newTick();
 }

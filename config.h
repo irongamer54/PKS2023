@@ -15,7 +15,7 @@
 ////////********     Интервалы для таймеров    ********////////
 #define DS_UPDATE_TIME 2000
 #define ADS_UPDATE_TIME 2000
-#define SEND_DATA_DELAY 2000
+#define SEND_DATA_DELAY 5000
 
 #define COUNT_FLTR 10   //количество фильтраций
 #define SERIAL_SPEED 9600 
@@ -26,8 +26,8 @@
 #define START_OTR2_ANGL 0 // угл для закрытого 2 отражателя
 #define START_SPEED 0
 
-#define OPEN_OTR_ANGL 90 // угл для открытого отражателя 
-#define OPEN_OTR2_ANGL 45 // угл для открытого 2 отражателя 
+#define OPEN_OTR_ANGL 40 // угл для открытого отражателя 
+#define OPEN_OTR2_ANGL 40 // угл для открытого 2 отражателя 
 
 #define CHNG_MODE_TIME 2000 //частота изменения режима работы камеры
 #define CHNG_DIR 500 //смена направления камеры

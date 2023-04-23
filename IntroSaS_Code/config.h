@@ -1,8 +1,11 @@
 #define LOG_WRITE_DELAY 2000
 #define LORA_SEND_DELAY 15000
 
-#define SRV_PIN 1 //прописать актуальный
+#define SRV_PIN PB5//прописать актуальный
 #define SRV_GRAT 2 // передаточное число
+
+#define ONE_WIRE_BUS PA15 //пин OneWire
+#define HEAT_PIN PB3//dawdw
 
 #define NAG_RES 100 // сопротивление нагрузки
 
@@ -18,6 +21,9 @@
 
 #define SAFE_START_ALTITUDE 2000 // Режим для защиты от внешних факторов
 #define SAFE_START_TIME 3600 // vvf
+
+#define MIN_TEMP 20
+#define MAX_TEMP 25
 
 #define kP 3.0
 #define kI 0.2
