@@ -1,24 +1,24 @@
 ////****    Файл конфигурации   ****////
+////////********   Режим работы    ********////////
+
+#define SERIAL_DBG_MODE 1 //режим работы Serial (0 - битовая отпарвка, 1 - отправка строки)
 
 ////////********   Назначение пинов    ********////////
-#define ONE_WIRE_BUS 5 //пин OneWire
+#define ONE_WIRE_BUS 10 //пин OneWire
 
-#define SRV_PIN_1 A1 //поставить актуальный
-#define SRV_PIN_2 A0 //поставить актуальный
+#define SRV_PIN_1 PC0 //поставить актуальный
+#define SRV_PIN_2 PC1 //поставить актуальный
 
-#define MTR_F_1 1 //поставить актуальный
-#define MTR_B_1 1 //поставить актуальный
+#define MTR_F_1 PD7 //поставить актуальный
+#define MTR_B_1 PD6 //поставить актуальный
 
-#define COUNT_MAG 2 // количество магнитов на центрифуге
-
-#define MAGN_PIN 1//пин датчика холла
+#define MAGN_PIN PC3//пин датчика холла
 #define COUNT_MAG 1 //количество магнитов
 
 ////////********     Интервалы для таймеров    ********////////
 #define DS_UPDATE_TIME 2000
 #define ADS_UPDATE_TIME 2000
-#define SEND_DATA_DELAY 2000
-
+#define SEND_DATA_DELAY 5000
 
 #define COUNT_FLTR 10   //количество фильтраций
 #define SERIAL_SPEED 9600 
@@ -29,8 +29,8 @@
 #define START_OTR2_ANGL 0 // угл для закрытого 2 отражателя
 #define START_SPEED 0
 
-#define OPEN_OTR_ANGL 90 // угл для открытого отражателя 
-#define OPEN_OTR2_ANGL 45 // угл для открытого 2 отражателя 
+#define OPEN_OTR_ANGL 40 // угл для открытого отражателя 
+#define OPEN_OTR2_ANGL 40 // угл для открытого 2 отражателя 
 
 #define CHNG_MODE_TIME 2000 //частота изменения режима работы камеры
 #define CHNG_DIR 500 //смена направления камеры
