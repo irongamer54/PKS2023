@@ -142,10 +142,12 @@ void SendData() { //функция отправки данных
   static Send_data buf;
 
   if (tmr.ready()) {
-
+    if (SERIAL_DBG_MODE) Serial.println(String("////////////////// PACKET START //////////////////\nMillis: "+String(millis())));
+      
     buf.mode = mode;
     for (uint8_t indx = 0; indx < 6; indx++) {
       buf.temp[indx] = ds_sensors.getTempCByIndex(indx);
+      
       if (SERIAL_DBG_MODE) Serial.println(String("Temp " + String(indx) + ": " + String(buf.temp[indx])));
     }
 
@@ -161,13 +163,22 @@ void SendData() { //функция отправки данных
 
     buf.speed_c = centri.getSpeed();
     // 6 ds, 2 угла серв, ИК, давление, скорость центрифуги, обороты мотора, режим работы
-    // Сказать Лере дописать эту часть кода (дозаполнить структуру)
+    // Лере дописать эту часть кода (дозаполнить структуру)
 
     byte crc = crc8((byte*)&buf, sizeof(buf) - 1);
     buf.crc = crc;
-
     if (!SERIAL_DBG_MODE)
         Serial.write((byte*)&buf, sizeof(buf));
+    if (SERIAL_DBG_MODE){
+      Serial.println(String("TempIK: " + String(buf.tempIK)));
+      Serial.println(String("Srv1 angle: " + String(buf.srv_angle[0])));
+      Serial.println(String("Srv2 angle: " + String(buf.srv_angle[1])));
+      Serial.println(String("Mtr speed: " + String(buf.speed_m)));
+      Serial.println(String("Cntr speed: " + String(buf.speed_c)));
+      Serial.println(String("Pressure: " + String(buf.prs)));
+      Serial.println(String("Altitude: " + String(buf.alt)));
+      Serial.println("////////////////// PACKET END //////////////////\n");
+    }
   }
 }
 
@@ -257,7 +268,7 @@ void hand_mode() {
 void setup() {
   delay(1000);
   Serial.begin(SERIAL_SPEED);
-  delay(1000);
+  delay(500);
   Wire.begin();
   //Serial.println("Start1");
   delay(1000);
@@ -276,7 +287,7 @@ void setup() {
 
   DSInit();
   
-  delay(1000);
+  delay(500);
 
   ads.setGain(GAIN_TWOTHIRDS);
   for (uint8_t c = 0; c < 50; c++) {
@@ -286,11 +297,12 @@ void setup() {
   }
 
   pinSetup();
-  delay(1000);
+  delay(500);
   otr_srv.attach(SRV_PIN_1);
-  delay(1000);
+  delay(500);
   otr2_srv.attach(SRV_PIN_2);
-  delay(10000);
+  delay(2000);
+  if (SERIAL_DBG_MODE) Serial.println("Start");
 }
 
 
