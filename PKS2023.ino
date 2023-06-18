@@ -146,7 +146,7 @@ void SendData() { //функция отправки данных
     buf.mode = mode;
     for (uint8_t indx = 0; indx < 6; indx++) {
       buf.temp[indx] = ds_sensors.getTempCByIndex(indx);
-      //Serial.println(ds_sensors.getTempCByIndex(indx));
+      if (SERIAL_DBG_MODE) Serial.println(String("Temp " + String(indx) + ": " + String(buf.temp[indx])));
     }
 
     buf.tempIK = mlx.readObjectTempC();
@@ -166,8 +166,8 @@ void SendData() { //функция отправки данных
     byte crc = crc8((byte*)&buf, sizeof(buf) - 1);
     buf.crc = crc;
 
-    Serial.write((byte*)&buf, sizeof(buf));
-    //Serial.println("Data_SEND");
+    if (!SERIAL_DBG_MODE)
+        Serial.write((byte*)&buf, sizeof(buf));
   }
 }
 
