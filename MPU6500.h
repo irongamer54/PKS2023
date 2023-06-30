@@ -24,9 +24,56 @@ class MPU6500 {
         return GyX;
     }
 
-    int16_t getSpeed() {
-      return speed;
+    double Gyro_Y() {
+        Wire.beginTransmission(addr);
+        Wire.write(0x43);
+        Wire.endTransmission(false);
+        Wire.requestFrom(addr,2);
+        double GyY=Wire.read()<<8|Wire.read();
+        Wire.endTransmission(true);
+        return GyY;
     }
+
+    double Gyro_Z() {
+        Wire.beginTransmission(addr);
+        Wire.write(0x43);
+        Wire.endTransmission(false);
+        Wire.requestFrom(addr,2);
+        double GyZ=Wire.read()<<8|Wire.read();
+        Wire.endTransmission(true);
+        return GyZ;
+    }
+
+    double Acs_X() {
+        Wire.beginTransmission(addr);
+        Wire.write(0x43);
+        Wire.endTransmission(false);
+        Wire.requestFrom(addr,2);
+        double AcX=Wire.read()<<8|Wire.read();
+        Wire.endTransmission(true);
+        return AcX;
+    }
+
+    double Acs_Y() {
+        Wire.beginTransmission(addr);
+        Wire.write(0x43);
+        Wire.endTransmission(false);
+        Wire.requestFrom(addr,2);
+        double AcY=Wire.read()<<8|Wire.read();
+        Wire.endTransmission(true);
+        return AcY;
+    }
+
+    double Acs_Z() {
+        Wire.beginTransmission(addr);
+        Wire.write(0x43);
+        Wire.endTransmission(false);
+        Wire.requestFrom(addr,2);
+        double AcZ=Wire.read()<<8|Wire.read();
+        Wire.endTransmission(true);
+        return AcZ;
+    }
+    
     
   private:
     int16_t addr = 0x68;

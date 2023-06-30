@@ -22,7 +22,6 @@
 #include "motor.h"
 #include "centrifuge.h"
 #include "config.h"
-
 //using namespace IntroSatLib;  интросас https://github.com/Goldfor/IntroSatLib https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
 
 //SunPosition pos ;
