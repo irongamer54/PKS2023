@@ -20,9 +20,12 @@ DeviceAddress *dsUnique;
 //HardwareSerial Serial3(PB11, PB10);//плата
 
 uint8_t mode = 4;
-float ds_t[8] = { 0, 0, 0, 0, 0, 0, 0, 0};
+float ds_t[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+float last_t[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+float pwr[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+uint16_t foto_r[4] = { 0, 0, 0, 0 };
 
-uint16_t foto_r[4]={0,0,0,0};
+uint64_t last_time[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 int32_t press = 0;
 int16_t altitude = 0;
@@ -89,6 +92,7 @@ void Parser() {  //парсинг Serial переделать
 
       for(uint8_t indx = 0; indx < 5; indx++){
         ds_t[indx] = buf.temp[indx];
+
       }
 
       for(uint8_t indx = 0; indx < 5; indx++){
@@ -183,11 +187,20 @@ void LoRa_Send() {
     Serial1.print("Mode: ");
     Serial1.print(mode);
     Serial1.print(";");
-    for (int8_t i = 0; i < 8; i++) {
+    for (int8_t indx = 0; indx < 8; indx++) {
+              
+      pwr[indx] = ((ds_t[indx]-last_t[indx])*M_PLAST1*C_PLAST)/((millis()-last_time[indx])/1000);
+      last_t[indx] = ds_t[indx];
+      last_time[indx] = millis();
       Serial1.print(" DS");
-      Serial1.print(i + 1);
+      Serial1.print(indx + 1);
       Serial1.print(" ");
-      Serial1.print(ds_t[i]);
+      Serial1.print(ds_t[indx]);
+      Serial1.print(";");
+      Serial1.print(" PWR");
+      Serial1.print(indx + 1);
+      Serial1.print(" ");
+      Serial1.print(pwr[indx]);
       Serial1.print(";");
     }
 
