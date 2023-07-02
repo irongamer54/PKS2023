@@ -20,12 +20,17 @@ DeviceAddress *dsUnique;
 //HardwareSerial Serial3(PB11, PB10);//плата
 
 uint8_t mode = 4;
-float ds_t[7] = { 0, 0, 0, 0, 0, 0, 0};
+float ds_t[8] = { 0, 0, 0, 0, 0, 0, 0, 0};
+
+uint16_t foto_r[4]={0,0,0,0};
 
 int32_t press = 0;
 int16_t altitude = 0;
 
-int16_t servo_a[3] = { 0, 0, 0 };
+int16_t servo_a = 0;
+
+float azim = 0;
+
 int16_t ms = 0;
 
 float pitch(){
@@ -56,12 +61,13 @@ uint8_t DSInit(bool is_init = 0) { //функция инициализации d
 
 #pragma pack(push, 1)
 struct Read_data {
-  uint8_t mode;
   float temp[6];
-  int32_t prs;
-  int16_t alt;
   uint16_t f_res[4];
-  int16_t srv_angle[2];
+  uint8_t mode;
+  double prs;
+  double alt;
+  int16_t srv_angle;
+  float azim;
   int16_t speed_m;
   byte crc;
 };
@@ -77,20 +83,23 @@ struct Send_data {
 
 void Parser() {  //парсинг Serial переделать
   static Read_data buf;
-  //Serial.println("data");
   if (Serial.readBytes((byte *)&buf, sizeof(buf))) {
-    //Serial.println(sizeof(buf));
-    byte crc = crc8((byte *)&buf, sizeof(buf)); ;
+    byte crc = crc8((byte *)&buf, sizeof(buf));
     if (crc == 0) {
-      //Serial.println("datatr");
+
+      for(uint8_t indx = 0; indx < 5; indx++){
+        ds_t[indx] = buf.temp[indx];
+      }
+
+      for(uint8_t indx = 0; indx < 5; indx++){
+        foto_r[indx] = buf.f_res[indx];
+      }
+
       mode = buf.mode;
-      for (int i = 0; i < 6; i++) ds_t[i] = buf.temp[i];
-      //Serial.println(buf.temp[0]);
-      ik = buf.tempIK;
       press = buf.prs;
       altitude = buf.alt;
-      centr_s = buf.speed_c;
-      for (int i = 0; i < 2; i++) servo_a[i] = buf.srv_angle[i];
+      servo_a = buf.srv_angle;
+      azim=buf.azim;
       ms = buf.speed_m;
     }
   }
@@ -105,7 +114,7 @@ void SendData() { //функция отправки данных
       
     buf.mode = mode;
 
-    buf.srv_angle[0] = otr_srv.read();
+    //buf.srv_angle[0] = otr_srv.read();
 
     // 6 ds, 2 угла серв, ИК, давление, скорость центрифуги, обороты мотора, режим работы
     // Лере дописать эту часть кода (дозаполнить структуру)
@@ -135,16 +144,13 @@ void Logging() {
     Serial2.print("Mode: ");
     Serial2.print(mode);
     Serial2.print(";");
-    for (int8_t i = 0; i < 7; i++) {
+    for (int8_t i = 0; i < 8; i++) {
       Serial2.print(" DS");
       Serial2.print(i + 1);
       Serial2.print(" ");
       Serial2.print(ds_t[i]);
       Serial2.print(";");
     }
-    Serial2.print(" IK_Temp: ");
-    Serial2.print(ik);
-    Serial2.print(";");
 
     Serial2.print(" Pres: ");
     Serial2.print(press);
@@ -154,17 +160,11 @@ void Logging() {
     Serial2.print(altitude);
     Serial2.print(";");
 
-    Serial2.print(" Azi: ");
-    Serial2.print(azi);
+    Serial2.print(" Azim: ");
+    Serial2.print(azim);
     Serial2.print(";");
 
-    for (uint8_t i = 0; i < 2; i++) {
-      Serial2.print(" Srv");
-      Serial2.print(i + 1);
-      Serial2.print(": ");
-      Serial2.print(servo_a[i]);
-      Serial2.print(";");
-    }
+
 
     Serial2.print(" Mtr: ");
     Serial2.print(ms);
@@ -183,16 +183,13 @@ void LoRa_Send() {
     Serial1.print("Mode: ");
     Serial1.print(mode);
     Serial1.print(";");
-    for (int8_t i = 0; i < 7; i++) {
+    for (int8_t i = 0; i < 8; i++) {
       Serial1.print(" DS");
       Serial1.print(i + 1);
       Serial1.print(" ");
       Serial1.print(ds_t[i]);
       Serial1.print(";");
     }
-    Serial1.print(" IK_Temp: ");
-    Serial1.print(ik);
-    Serial1.print(";");
 
     Serial1.print(" Pres: ");
     Serial1.print(press);
@@ -202,17 +199,9 @@ void LoRa_Send() {
     Serial1.print(altitude);
     Serial1.print(";");
 
-    Serial1.print(" Azi: ");
-    Serial1.print(azi);
+    Serial1.print(" Azim: ");
+    Serial1.print(azim);
     Serial1.print(";");
-
-    for (uint8_t i = 0; i < 2; i++) {
-      Serial1.print(" Srv");
-      Serial1.print(i + 1);
-      Serial1.print(": ");
-      Serial1.print(servo_a[i]);
-      Serial1.print(";");
-    }
 
     Serial1.print(" Mtr: ");
     Serial1.print(ms);
@@ -231,14 +220,14 @@ void thermReg() {
     ds_t[6] = ds_sensors.getTempCByIndex(0);
     ds_t[7] = ds_sensors.getTempCByIndex(1);
     if (ds_t[6] < MIN_TEMP) {
-      digitalWrite(AKB_HEAT_PIN, 1);
+     // digitalWrite(AKB_HEAT_PIN, 1);
     } else {
-      digitalWrite(AKB_HEAT_PIN, 0);
+     // digitalWrite(AKB_HEAT_PIN, 0);
     }
     if (ds_t[7] < MIN_TEMP) {
-      digitalWrite(SRV_HEAT_PIN, 1);
+    //  digitalWrite(SRV_HEAT_PIN, 1);
     } else  {
-      digitalWrite(SRV_HEAT_PIN, 0);
+    //  digitalWrite(SRV_HEAT_PIN, 0);
     }
   }
 }
