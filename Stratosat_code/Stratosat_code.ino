@@ -3,11 +3,13 @@
 
 #include <OneWire.h>
 #include <DallasTemperature.h>//библиотека для работы с ds18b20 датчиком температуры
+#include <MPU6050.h>
 
 #include "timer.h"
 
 #include "config.h"
 
+MPU6050 mpu;
 
 OneWire oneWire(ONE_WIRE_BUS);
 
@@ -19,14 +21,23 @@ DeviceAddress *dsUnique;
 
 uint8_t mode = 4;
 float ds_t[7] = { 0, 0, 0, 0, 0, 0, 0};
-float ik = 0;
+
 int32_t press = 0;
 int16_t altitude = 0;
-int16_t centr_s = 0;
-float azi = 0;
+
 int16_t servo_a[3] = { 0, 0, 0 };
 int16_t ms = 0;
-float pwr = 0; //мощность на СП
+
+float pitch(){
+  Vector normAccel = mpu.readNormalizeAccel();
+
+  return -(atan2(normAccel.XAxis, sqrt(normAccel.YAxis*normAccel.YAxis + normAccel.ZAxis*normAccel.ZAxis))*180.0)/M_PI;
+}
+
+void pinSetup(){
+  pinMode(AKB_HEAT_PIN, OUTPUT);
+  pinMode(SRV_HEAT_PIN, OUTPUT);
+}
 
 uint8_t DSInit(bool is_init = 0) { //функция инициализации ds18b20
   delay(1000);
@@ -47,10 +58,9 @@ uint8_t DSInit(bool is_init = 0) { //функция инициализации d
 struct Read_data {
   uint8_t mode;
   float temp[6];
-  float tempIK;
   int32_t prs;
   int16_t alt;
-  int16_t speed_c;
+  uint16_t f_res[4];
   int16_t srv_angle[2];
   int16_t speed_m;
   byte crc;
@@ -60,8 +70,7 @@ struct Read_data {
 #pragma pack(push, 1)
 struct Send_data {
   uint8_t mode;
-  float srv_angle[2];
-  int16_t speed_m;
+  float tang;
   byte crc;
 };
 #pragma pack(pop)
@@ -84,6 +93,27 @@ void Parser() {  //парсинг Serial переделать
       for (int i = 0; i < 2; i++) servo_a[i] = buf.srv_angle[i];
       ms = buf.speed_m;
     }
+  }
+}
+
+void SendData() { //функция отправки данных
+  static Timer tmr(SEND_DATA_DELAY);
+  static Send_data buf;
+
+  if (tmr.ready()) {
+    if (SERIAL_DBG_MODE) Serial.println(String("////////////////// PACKET START //////////////////\nMillis: "+String(millis())));
+      
+    buf.mode = mode;
+
+    buf.srv_angle[0] = otr_srv.read();
+
+    // 6 ds, 2 угла серв, ИК, давление, скорость центрифуги, обороты мотора, режим работы
+    // Лере дописать эту часть кода (дозаполнить структуру)
+
+    byte crc = crc8((byte*)&buf, sizeof(buf) - 1);
+    buf.crc = crc;
+    if (!SERIAL_DBG_MODE)
+        Serial.write((byte*)&buf, sizeof(buf));
   }
 }
 
@@ -194,17 +224,8 @@ void LoRa_Send() {
   }
 }
 
-void standby() {
-  srv_z.write(0);
-}
-
-void selfMode() {
-
-}
-
 void thermReg() {
-  //написать Лере подогрев акб
-  static Timer tmr(5000);
+  static Timer tmr(TERM_REG_DELAY);
   if (tmr.ready()) {
     ds_sensors.requestTemperatures();
     ds_t[6] = ds_sensors.getTempCByIndex(0);
@@ -222,6 +243,12 @@ void thermReg() {
   }
 }
 
+void standby() {
+}
+
+void selfMode() {
+}
+
 void handMode() {
   // расписать подачу данных напрямую
 
@@ -229,24 +256,29 @@ void handMode() {
 
 ////////////////////////////    SETUP    ////////////////////////////
 void setup() {  
-  Serial.begin(57600);
-  delay(500);
+  Serial.begin(PN_SPEED);
+  delay(200);
 
-  Serial1.begin(9600);
-  delay(500);
+  Serial1.begin(LORA_SPEED);
+  delay(200);
 
-  Serial2.begin(9600);
-  delay(1000);
+  Serial2.begin(LOG_SPEED);
+  delay(200);
+  
+  if(GPS_AVAIBLE){
+    Serial3.begin(GPS_SPEED);
+    delay(200);
+  }
 
-  delay(500);
   Wire.begin();
   delay(500);
 
-  pinMode(PC13, OUTPUT);
+  pinSetup();
+
   DSInit();
   delay(500);
 
-  Serial.println("Started");
+  Serial1.println("Started");
   Serial2.println("Started");
 }
 
@@ -256,7 +288,7 @@ void loop() {
   //Serial.println("Started");
   //delay(1000);
   //digitalWrite(PC13,1);
-  //thermReg();
+  thermReg();
   Parser();
   Logging();
   LoRa_Send();

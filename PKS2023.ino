@@ -39,18 +39,13 @@ Adafruit_ADS1115 ads;
 MS5611 ms5611;
 
 Servo otr_srv;
-Servo otr2_srv;
 
 Motor cam_mtr(MTR_F_1, MTR_B_1); //переименовать)
 Centrifuge centri(MAGN_PIN, COUNT_MAG); //пример
 
 uint8_t mode = 0;
 
-int16_t speed_m = 0;
-
-int16_t srv_angle[2] = {0, 0}; //поставить начальные углы
-
-uint8_t trn_speed[3] = {0, 0, 0};
+float tang = 0;
 
 double referencePressure;//давление
 
@@ -113,14 +108,19 @@ int16_t flt_ads(uint8_t pin = 0) { // функция фильтрации зна
   return last_zn[pin];
 }
 
+float azim(){
+  int32_t x=flt_ads(0)-flt_ads(3);
+  int32_t y=flt_ads(1)-flt_ads(2);
+  return atan2(x,y)
+}
+
 #pragma pack(push, 1)
 struct Send_data {
-  uint8_t mode;
+    uint8_t mode;
   float temp[6];
-  float tempIK;
   int32_t prs;
   int16_t alt;
-  int16_t speed_c;
+  uint16_t f_res[4];
   int16_t srv_angle[2];
   int16_t speed_m;
   byte crc;
@@ -130,8 +130,7 @@ struct Send_data {
 #pragma pack(push, 1)
 struct Read_data {
   uint8_t mode;
-  float srv_angle[2];
-  int16_t speed_m;
+  float tang;
   byte crc;
 };
 #pragma pack(pop)
@@ -150,30 +149,21 @@ void SendData() { //функция отправки данных
       if (SERIAL_DBG_MODE) Serial.println(String("Temp " + String(indx) + ": " + String(buf.temp[indx])));
     }
 
-    buf.tempIK = mlx.readObjectTempC();
-
     buf.srv_angle[0] = otr_srv.read();
-    buf.srv_angle[1] = otr2_srv.read();
 
     buf.speed_m = cam_mtr.getSpeed();
 
     buf.prs = ms5611.readPressure();
     buf.alt = ms5611.getAltitude(buf.prs);
 
-    buf.speed_c = centri.getSpeed();
-    // 6 ds, 2 угла серв, ИК, давление, скорость центрифуги, обороты мотора, режим работы
-    // Лере дописать эту часть кода (дозаполнить структуру)
-
     byte crc = crc8((byte*)&buf, sizeof(buf) - 1);
     buf.crc = crc;
     if (!SERIAL_DBG_MODE)
         Serial.write((byte*)&buf, sizeof(buf));
     if (SERIAL_DBG_MODE){
-      Serial.println(String("TempIK: " + String(buf.tempIK)));
       Serial.println(String("Srv1 angle: " + String(buf.srv_angle[0])));
       Serial.println(String("Srv2 angle: " + String(buf.srv_angle[1])));
       Serial.println(String("Mtr speed: " + String(buf.speed_m)));
-      Serial.println(String("Cntr speed: " + String(buf.speed_c)));
       Serial.println(String("Pressure: " + String(buf.prs)));
       Serial.println(String("Altitude: " + String(buf.alt)));
       Serial.println("////////////////// PACKET END //////////////////\n");
@@ -189,8 +179,8 @@ void Parser() { //парсинг Serial переделать
     byte crc = crc8((byte*)&buf, sizeof(buf));
 
     if (crc == 0) {
-      mode = buf.mode;
-      for(uint8_t i=0;i<2;i++) srv_angle[i]= buf.srv_angle[i]; 
+      //mode = buf.mode;
+      tang = buf.tang;
       speed_m = buf.speed_m;
     } else {
       //запросить повтор пакета
@@ -210,52 +200,27 @@ byte crc8(byte *buffer, byte size) { // функция вычисления crc
   return crc;
 }
 
+void sun_orient(){
+  otr_srv.write(sun.altitude()-tang);
+  // прописать пид регулятор для наводки на солнце
+}
+
 void pinSetup() {
-  //pinMode(SRV_PIN_1, OUTPUT);
-  //pinMode(SRV_PIN_2, OUTPUT);
-  pinMode(2, OUTPUT);
+  pinMode(SRV_PIN, OUTPUT);
+
+  pinMode(MTR_F_PIN, OUTPUT);
+  pinMode(MTR_B_PIN, OUTPUT);
+
+  pinMode(LED_PIN, OUTPUT);
 }
 
 void standby() {
   otr_srv.write(START_OTR_ANGL);
-  otr2_srv.write(START_OTR2_ANGL);
-  cam_mtr.setSpeed(START_SPEED);
-
 }
 
 void self_mode() {
-  static Timer tmr(CHNG_MODE_TIME);
-  static Timer tmr_2(CHNG_DIR);
-
-  static int8_t dir = 1;
-  static uint8_t cntr_move_mode = 0;
-
-
-  if (tmr.ready()) {
-    cntr_move_mode++;
-    if (cntr_move_mode >= 3) {
-      cntr_move_mode = 0;
-    }
-  }
-
-  otr2_srv.write(OPEN_OTR2_ANGL);
   otr_srv.write(OPEN_OTR_ANGL);
 
-  switch (cntr_move_mode)
-  {
-    case 0:
-      cam_mtr.setSpeed(CNTR_SPEED);
-      break;
-    case 1:
-      cam_mtr.setSpeed(CNTR_SPEED * -1);
-      break;
-    case 2:
-      if (tmr_2.ready()) dir *= -1;
-      cam_mtr.setSpeed(CNTR_SPEED * dir);
-      break;
-    default:
-      break;
-  }
 }
 
 void hand_mode() {
@@ -265,22 +230,14 @@ void hand_mode() {
 
 ////////////////////////////    SETUP    ////////////////////////////
 void setup() {
-  delay(1000);
   Serial.begin(SERIAL_SPEED);
-  delay(500);
+  delay(200);
   Wire.begin();
-  //Serial.println("Start1");
-  delay(1000);
-  for (uint8_t c = 0; c < 5; c++) { // Инициализация датчика
-    if (mlx.begin()) break;
-    Serial.println("MLX NOT START");
-    delay(200);
-  }
-  //Serial.println("Start1");
+  delay(200);
 
   for (uint8_t c = 0; c < 50; c++) {
     if (ms5611.begin()) break;
-    Serial.println("ADS NOT START");
+    if (SERIAL_DBG_MODE) Serial.println("MS NOT START");
     delay(200);
   }
 
@@ -291,7 +248,7 @@ void setup() {
   ads.setGain(GAIN_TWOTHIRDS);
   for (uint8_t c = 0; c < 50; c++) {
     if (ads.begin()) break;
-    Serial.println("ADS NOT START");
+    if (SERIAL_DBG_MODE) Serial.println("ADS NOT START");
     delay(200);
   }
 
@@ -299,18 +256,19 @@ void setup() {
   delay(500);
   otr_srv.attach(SRV_PIN_1);
   delay(500);
-  otr2_srv.attach(SRV_PIN_2);
-  delay(2000);
+
   if (SERIAL_DBG_MODE) Serial.println("Start");
 }
 
 
 ////////////////////////////    LOOP    ////////////////////////////
 void loop() {
+
   flt_ads();
   dsGetTemp();
-  //Parser();
+  Parser();
   SendData();
+
   int32_t prs = ms5611.readPressure();
   int32_t alt =  ms5611.getAltitude(prs);
   if(alt>10000){
