@@ -10,11 +10,14 @@
 
 #include <TimeLib.h>
 #include "timer.h" //библиотека таймера
-//#include "SunPosition.h"//библиотека для определения положения солнца
+#include "SunPosition.h"//библиотека для определения положения солнца
+
+
 
 #include <MS5611.h>//библиотека для работы с ms5611 барометром https://www.yourduino.ru/blogs/blog/GY63urok
 #include <Adafruit_MLX90614.h> //библиотека для работы с MLX90614 ИК датчиком температуры
-#include <DallasTemperature.h>//библиотека для работы с ds18b20 датчиком температуры
+//#include <DallasTemperature.h>//библиотека для работы с ds18b20 датчиком температуры
+#include <microDS18B20.h>//алт библиотека для работы с ds18b20 датчиком температуры
 #include <Adafruit_ADS1X15.h>//библиотека для работы с ADS1115 АЦП 
 
 #include <Servo.h>
@@ -24,16 +27,13 @@
 #include "config.h"
 //using namespace IntroSatLib;  интросас https://github.com/Goldfor/IntroSatLib https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
 
-//SunPosition pos ;
+SunPosition sun(55.755826, 37.6173, 1688368000);
 
 //AsyncStream<100> serial(&Serial, ';');
 
-OneWire oneWire(10);
+//DeviceAddress *dsUnique;
 
-DallasTemperature ds_sensors(&oneWire);
-DeviceAddress *dsUnique;
-
-Adafruit_MLX90614 mlx = Adafruit_MLX90614();
+//Adafruit_MLX90614 mlx = Adafruit_MLX90614();
 Adafruit_ADS1115 ads;
 
 MS5611 ms5611;
@@ -45,7 +45,7 @@ Motor cam_mtr(MTR_F_PIN, MTR_B_PIN); //переименовать)
 
 uint8_t mode = 0;
 
-float tang = 0;
+int8_t tang = 0;
 
 double referencePressure;//давление
 
@@ -58,34 +58,6 @@ double referencePressure;//давление
   термометры
   тд
 */
-
-void printAddress(DeviceAddress deviceAddress) { // функция вывода адресов ds18b20
-  for (uint8_t i = 0; i < 8; i++) {
-    if (deviceAddress[i] < 16) Serial.print("0");
-    Serial.print(deviceAddress[i], HEX);
-  }
-}
-
-uint8_t DSInit(bool is_init = 0) { //функция инициализации ds18b20
-  delay(1000);
-  uint8_t ds_count = ds_sensors.getDeviceCount();
-  if(SERIAL_DBG_MODE)Serial.println(ds_count);
-  if (!is_init) {
-    dsUnique = new DeviceAddress[ds_count];
-    for (int i = 0; i < ds_count; i++) {
-      ds_sensors.getAddress(dsUnique[i], i);
-    }
-    for (int i = 0; i < ds_count; i++) {
-      ds_sensors.setResolution(dsUnique[i], 12);
-    }
-  }
-  return ds_count;
-}
-
-void dsGetTemp() { //хаха, я оставлю функцию, просто потому-что могу
-  static Timer tmr(DS_UPDATE_TIME);
-  if (tmr.ready()) ds_sensors.requestTemperatures();
-}
 
 int16_t flt_ads(uint8_t pin = 0) { // функция фильтрации значений с ацп
 
@@ -117,7 +89,6 @@ float azim(){
 
 #pragma pack(push, 1)
 struct Send_data {
-  float temp[6];
   uint16_t f_res[4];
   uint8_t mode;
   double prs;
@@ -144,11 +115,6 @@ void SendData() { //функция отправки данных
   if (tmr.ready()) {
     if (SERIAL_DBG_MODE) Serial.println(String("////////////////// PACKET START //////////////////\nMillis: "+String(millis())));
 
-    for (uint8_t indx = 0; indx < 6; indx++) {
-      buf.temp[indx] = ds_sensors.getTempCByIndex(indx);
-      if (SERIAL_DBG_MODE) Serial.println(String("Temp " + String(indx) + ": " + String(buf.temp[indx])));
-    }
-
     for (uint8_t indx = 0; indx < 4; indx++) {
       buf.f_res[indx] = flt_ads(indx);
       if (SERIAL_DBG_MODE) Serial.println(String("Foto " + String(indx) + ": " + String(buf.f_res[indx])));
@@ -161,7 +127,7 @@ void SendData() { //функция отправки данных
 
     buf.srv_angle = otr_srv.read();
 
-    buf.azim=azim();
+    buf.azim=sun.altitude();
 
     buf.speed_m = cam_mtr.getSpeed();
 
@@ -191,9 +157,12 @@ void Parser() { //парсинг Serial переделать
 
     if (crc == 0) {
       //mode = buf.mode;
+      digitalWrite(LED_PIN,1);
       tang = buf.tang;
+      //tang = 90;
       //speed_m = buf.speed_m;
     } else {
+      digitalWrite(LED_PIN,0);
       //запросить повтор пакета
     }
   }
@@ -212,21 +181,23 @@ byte crc8(byte *buffer, byte size) { // функция вычисления crc
 }
 
 void sun_orient(){
-  //otr_srv.write(sun.altitude()-tang);
+  static Timer tmr(SRV_DELAY);
+  if (tmr.ready())otr_srv.write(tang+90);
   // прописать пид регулятор для наводки на солнце
 }
 
 void pinSetup() {
-  pinMode(SRV_PIN, OUTPUT);
+  //pinMode(SRV_PIN, OUTPUT);
 
   pinMode(MTR_F_PIN, OUTPUT);
   pinMode(MTR_B_PIN, OUTPUT);
 
- // pinMode(LED_PIN, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
 }
 
 void standby() {
-  otr_srv.write(START_OTR_ANGL);
+  
+  //otr_srv.write(START_OTR_ANGL);
 }
 
 void self_mode() {
@@ -234,13 +205,14 @@ void self_mode() {
 }
 
 void hand_mode() {
-  Serial.print("ПРописать ");// нужно поработать ручками
+  //Serial.print("ПРописать ");// нужно поработать ручками
 
 }
 
 ////////////////////////////    SETUP    ////////////////////////////
 void setup() {
   Serial.begin(SERIAL_SPEED);
+  Serial.setTimeout(200);
   delay(200);
   Wire.begin();
   delay(200);
@@ -250,8 +222,6 @@ void setup() {
     if (SERIAL_DBG_MODE) Serial.println("MS NOT START");
     delay(200);
   }
-
-  DSInit();
   
   delay(500);
 
@@ -273,12 +243,11 @@ void setup() {
 
 ////////////////////////////    LOOP    ////////////////////////////
 void loop() {
-
   flt_ads();
-  dsGetTemp();
   Parser();
   SendData();
-
+  sun_orient();
+  
   double prs = ms5611.readPressure();
   double alt =  ms5611.getAltitude(prs);
   if(alt>10000){

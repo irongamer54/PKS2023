@@ -6,18 +6,31 @@
 
 ////////********     Интервалы для таймеров    ********////////
 #define LOG_WRITE_DELAY 1000
-#define LORA_SEND_DELAY 10000
+#define LORA_SEND_DELAY 5000
 #define TERM_REG_DELAY 5000
-#define SEND_DATA_DELAY 800
+#define DS_UPDATE_TIME 800
+#define SEND_DATA_DELAY 500
 
 ///////////********* Настройки Serial *********///////////
 #define LORA_SPEED 9600
 #define LOG_SPEED 115200
-#define PN_SPEED 57600
+#define PN_SPEED 9600
 #define GPS_SPEED 57600
 
 ///////////********* Назначение пинов  *********///////////
 #define ONE_WIRE_BUS 10 //пин OneWire
+
+#define DS_SENSOR_AMOUNT 3 //количество ds18b20
+
+uint8_t DS_ADDR[][8] = { //адреса ds18b20
+    {0x28, 0xFF, 0x54, 0x7E, 0x00, 0x17, 0x03, 0x1F},//АКБ прописать
+    {0x28, 0xFF, 0x42, 0x5A, 0x51, 0x17, 0x4, 0xD2},//серва прописать
+    {0x28, 0xB6, 0x61, 0x68, 0xA1, 0x22, 0x09, 0x6A },//элек стратоспутника
+    {0x28, 0x0B, 0x03, 0x44, 0xD4, 0xE1, 0x3C, 0x6D},//пласт 1
+    {0x28, 0xE3, 0xFE, 0x44, 0xD4, 0xE1, 0x3C, 0xAF},//пласт 2
+    {0x28, 0xFF, 0xCD, 0x59, 0x51, 0x17, 0x4, 0xFE},//внеш прописать
+    {0x28, 0xFF, 0xCD, 0x59, 0x51, 0x17, 0x4, 0xFE},//окр_серда прописать
+};
 
 #define AKB_HEAT_PIN 11//пин подогрева акб
 #define SRV_HEAT_PIN PB3 //пин подогрева сервы (поставить актуальный)

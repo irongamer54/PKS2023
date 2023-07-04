@@ -1,8 +1,7 @@
-
 #include<Wire.h>
 
 #include <OneWire.h>
-#include <DallasTemperature.h>//библиотека для работы с ds18b20 датчиком температуры
+#include <microDS18B20.h>//алт библиотека для работы с ds18b20 датчиком температуры
 #include <MPU6050.h>
 
 #include "timer.h"
@@ -13,8 +12,7 @@ MPU6050 mpu;
 
 OneWire oneWire(ONE_WIRE_BUS);
 
-DallasTemperature ds_sensors(&oneWire);
-DeviceAddress *dsUnique;
+MicroDS18B20<10, DS_ADDR_MODE, DS_SENSOR_AMOUNT> ds18;
 
 //HardwareSerial Serial1(PA3, PA2);//лог
 //HardwareSerial Serial3(PB11, PB10);//плата
@@ -48,23 +46,35 @@ void pinSetup(){
 }
 
 uint8_t DSInit(bool is_init = 0) { //функция инициализации ds18b20
-  delay(1000);
-  uint8_t ds_count = ds_sensors.getDeviceCount();
+  //delay(1000);
+  //uint8_t ds_count = ds_sensors.getDeviceCount();
+  //if(SERIAL_DBG_MODE)Serial.println(ds_count);
   if (!is_init) {
-    dsUnique = new DeviceAddress[ds_count];
-    for (int i = 0; i < ds_count; i++) {
-      ds_sensors.getAddress(dsUnique[i], i);
-    }
-    for (int i = 0; i < ds_count; i++) {
-      ds_sensors.setResolution(dsUnique[i], 12);
+      ds18.setAddress((uint8_t*)DS_ADDR);
+      ds18.setResolutionAll(12);
+  }
+  //return ds_count;
+}
+
+void dsGetTemp() { //хаха, я оставлю функцию, просто потому-что могу
+  static Timer tmr(DS_UPDATE_TIME);
+  if(tmr.ready()){
+    for (int i = 0; i < DS_SENSOR_AMOUNT; i++) {
+      ds18.requestTempAll();
     }
   }
-  return ds_count;
+  for(uint8_t indx = 0; indx < DS_SENSOR_AMOUNT; i++){
+    if(ds18.readTemp(indx)){
+      ds_t[indx]=ds18.getTemp(indx);
+      pwr[indx] = ((ds_t[indx] - last_t[indx]) * M_PLAST1 * C_PLAST) / ((millis() - last_time[indx]) / 1000);
+      last_t[indx] = ds_t[indx];
+      last_time[indx] = millis();
+    }
+  }
 }
 
 #pragma pack(push, 1)
 struct Read_data {
-  float temp[6];
   uint16_t f_res[4];
   uint8_t mode;
   double prs;
@@ -79,7 +89,7 @@ struct Read_data {
 #pragma pack(push, 1)
 struct Send_data {
   uint8_t mode;
-  float tang;
+  int8_t tang;
   byte crc;
 };
 #pragma pack(pop)
@@ -90,12 +100,7 @@ void Parser() {  //парсинг Serial переделать
     byte crc = crc8((byte *)&buf, sizeof(buf));
     if (crc == 0) {
 
-      for(uint8_t indx = 0; indx < 5; indx++){
-        ds_t[indx] = buf.temp[indx];
-
-      }
-
-      for(uint8_t indx = 0; indx < 5; indx++){
+      for(uint8_t indx = 0; indx < 4; indx++){
         foto_r[indx] = buf.f_res[indx];
       }
 
@@ -112,16 +117,16 @@ void Parser() {  //парсинг Serial переделать
 void SendData() { //функция отправки данных
   static Timer tmr(SEND_DATA_DELAY);
   static Send_data buf;
-
+  //static uint32_t t_l=0;
   if (tmr.ready()) {
     if (SERIAL_DBG_MODE) Serial.println(String("////////////////// PACKET START //////////////////\nMillis: "+String(millis())));
       
     buf.mode = mode;
+    buf.tang = pitch();
 
-    //buf.srv_angle[0] = otr_srv.read();
-
-    // 6 ds, 2 угла серв, ИК, давление, скорость центрифуги, обороты мотора, режим работы
-    // Лере дописать эту часть кода (дозаполнить структуру)
+    if (SERIAL_DBG_MODE){
+      Serial.println(pitch());
+    }
 
     byte crc = crc8((byte*)&buf, sizeof(buf) - 1);
     buf.crc = crc;
@@ -145,99 +150,83 @@ byte crc8(byte *buffer, byte size) {  // функция вычисления crc
 void Logging() {
   static Timer tmr(LOG_WRITE_DELAY);
   if (tmr.ready()) {
-    Serial2.print("Mode: ");
     Serial2.print(mode);
-    Serial2.print(";");
-    for (int8_t i = 0; i < 8; i++) {
-      Serial2.print(" DS");
-      Serial2.print(i + 1);
-      Serial2.print(" ");
-      Serial2.print(ds_t[i]);
-      Serial2.print(";");
+    Serial2.print("; ");
+
+    for (int8_t indx = 0; indx < 8; indx++) {
+      Serial2.print(ds_t[indx]);
+      Serial2.print("; ");
+      Serial2.print(pwr[indx]);
+      Serial2.print("; ");
     }
 
-    Serial2.print(" Pres: ");
     Serial2.print(press);
-    Serial2.print(";");
+    Serial2.print("; ");
 
-    Serial2.print(" Alt: ");
     Serial2.print(altitude);
-    Serial2.print(";");
+    Serial2.print("; ");
 
-    Serial2.print(" Azim: ");
     Serial2.print(azim);
-    Serial2.print(";");
+    Serial2.print("; ");
 
+    Serial2.print(pitch());
+    Serial2.print("; ");
 
+    Serial2.print(servo_a);
+    Serial2.print("; ");
 
-    Serial2.print(" Mtr: ");
     Serial2.print(ms);
-    Serial2.print(";");
+    Serial2.print("; ");
 
-    Serial2.print(" MIL: ");
     Serial2.print(millis());
-    Serial2.println(";");
-
+    Serial2.println("; ");
   }
 }
 
 void LoRa_Send() {
   static Timer tmr(LORA_SEND_DELAY);
   if (tmr.ready()) {
-    Serial1.print("Mode: ");
     Serial1.print(mode);
-    Serial1.print(";");
+    Serial1.print("; ");
     for (int8_t indx = 0; indx < 8; indx++) {
-              
-      pwr[indx] = ((ds_t[indx]-last_t[indx])*M_PLAST1*C_PLAST)/((millis()-last_time[indx])/1000);
-      last_t[indx] = ds_t[indx];
-      last_time[indx] = millis();
-      Serial1.print(" DS");
-      Serial1.print(indx + 1);
-      Serial1.print(" ");
       Serial1.print(ds_t[indx]);
-      Serial1.print(";");
-      Serial1.print(" PWR");
-      Serial1.print(indx + 1);
-      Serial1.print(" ");
+      Serial1.print("; ");
       Serial1.print(pwr[indx]);
-      Serial1.print(";");
+      Serial1.print("; ");
     }
 
-    Serial1.print(" Pres: ");
     Serial1.print(press);
-    Serial1.print(";");
+    Serial1.print("; ");
 
-    Serial1.print(" Alt: ");
     Serial1.print(altitude);
-    Serial1.print(";");
+    Serial1.print("; ");
 
-    Serial1.print(" Azim: ");
     Serial1.print(azim);
-    Serial1.print(";");
+    Serial1.print("; ");
 
-    Serial1.print(" Mtr: ");
+    Serial1.print(pitch());
+    Serial1.print("; ");
+
+    Serial1.print(servo_a);
+    Serial1.print("; ");
+
     Serial1.print(ms);
-    Serial1.print(";");
+    Serial1.print("; ");
 
-    Serial1.print(" MIL: ");
     Serial1.print(millis());
-    Serial1.println(";");
+    Serial1.println("; ");
   }
 }
 
 void thermReg() {
   static Timer tmr(TERM_REG_DELAY);
   if (tmr.ready()) {
-    ds_sensors.requestTemperatures();
-    ds_t[6] = ds_sensors.getTempCByIndex(0);
-    ds_t[7] = ds_sensors.getTempCByIndex(1);
-    if (ds_t[6] < MIN_TEMP) {
+    if (ds_t[0] < MIN_TEMP) {
      // digitalWrite(AKB_HEAT_PIN, 1);
     } else {
      // digitalWrite(AKB_HEAT_PIN, 0);
     }
-    if (ds_t[7] < MIN_TEMP) {
+    if (ds_t[1] < MIN_TEMP) {
     //  digitalWrite(SRV_HEAT_PIN, 1);
     } else  {
     //  digitalWrite(SRV_HEAT_PIN, 0);
@@ -259,6 +248,7 @@ void handMode() {
 ////////////////////////////    SETUP    ////////////////////////////
 void setup() {  
   Serial.begin(PN_SPEED);
+  Serial.setTimeout(100);
   delay(200);
 
   Serial1.begin(LORA_SPEED);
@@ -272,6 +262,12 @@ void setup() {
     delay(200);
   }
 
+  while(!mpu.begin(MPU6050_SCALE_2000DPS, MPU6050_RANGE_2G))
+  {
+    Serial1.println("Could not find a valid MPU6050 sensor, check wiring!");
+    delay(500);
+  }
+  
   Wire.begin();
   delay(500);
 
@@ -286,12 +282,15 @@ void setup() {
 
 ////////////////////////////    LOOP    ////////////////////////////
 void loop() {
-  //Serial2.println("Started");
-  //Serial.println("Started");
-  //delay(1000);
-  //digitalWrite(PC13,1);
+  uint64_t l_time=millis();
+  dsGetTemp();
+  Serial.println(millis()-l_time);
+
   thermReg();
+
+  SendData();
   Parser();
+
   Logging();
   LoRa_Send();
 
@@ -309,4 +308,5 @@ void loop() {
     default:
       break;
   }
+  Serial.println(millis()-l_time);
 }
