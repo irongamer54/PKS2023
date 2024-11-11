@@ -1,6 +1,5 @@
 #pragma once
 #include <Arduino.h>
-
 class Timer {
   public:
     Timer(uint16_t nprd = 0) {

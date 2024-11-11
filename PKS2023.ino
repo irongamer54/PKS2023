@@ -27,7 +27,7 @@
 #include "config.h"
 //using namespace IntroSatLib;  интросас https://github.com/Goldfor/IntroSatLib https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
 
-SunPosition sun(55.755826, 37.6173, 1688368000);
+SunPosition sun(55.755826, 37.6173, 1688558000);
 
 //AsyncStream<100> serial(&Serial, ';');
 
@@ -127,7 +127,7 @@ void SendData() { //функция отправки данных
 
     buf.srv_angle = otr_srv.read();
 
-    buf.azim=sun.altitude();
+    buf.azim=sun.altitude()+90-tang;
 
     buf.speed_m = cam_mtr.getSpeed();
 
@@ -182,7 +182,13 @@ byte crc8(byte *buffer, byte size) { // функция вычисления crc
 
 void sun_orient(){
   static Timer tmr(SRV_DELAY);
-  if (tmr.ready())otr_srv.write(tang+90);
+  if (tmr.ready()){
+    //float a=sun.altitude()+90+tang;
+    float a=90-sun.altitude();
+    a=constrain(a,MIN_SRV_ANGL,MAX_SRV_ANGL);
+    otr_srv.write(a);
+  }
+  
   // прописать пид регулятор для наводки на солнце
 }
 
@@ -196,12 +202,11 @@ void pinSetup() {
 }
 
 void standby() {
-  
-  //otr_srv.write(START_OTR_ANGL);
+  otr_srv.write(START_OTR_ANGL);
 }
 
 void self_mode() {
-
+    sun_orient();
 }
 
 void hand_mode() {
@@ -244,9 +249,8 @@ void setup() {
 ////////////////////////////    LOOP    ////////////////////////////
 void loop() {
   flt_ads();
-  Parser();
+  //Parser();
   SendData();
-  sun_orient();
   
   double prs = ms5611.readPressure();
   double alt =  ms5611.getAltitude(prs);
@@ -259,7 +263,7 @@ void loop() {
   {
     case 0:
       /* code*/
-     // standby();
+      standby();
       break;
     case 1:
       self_mode();

@@ -1,6 +1,6 @@
 ////****    Файл конфигурации   ****////
 ////////********   Режим работы    ********////////
-#define SERIAL_DBG_MODE 1 //режим работы Serial (0 - битовая отпарвка, 1 - отправка строки)
+#define SERIAL_DBG_MODE 0 //режим работы Serial (0 - битовая отпарвка, 1 - отправка строки)
 
 ////////********   Назначение пинов    ********////////
 #define ONE_WIRE_BUS 10 //пин OneWire
@@ -15,6 +15,8 @@ uint8_t DS_ADDR[][8] = { //адреса ds18b20
 };
 
 #define SRV_PIN A0 //поставить актуальный
+#define MIN_SRV_ANGL 35
+#define MAX_SRV_ANGL 140
 
 #define MTR_F_PIN PD7 //поставить актуальный
 #define MTR_B_PIN PD6 //поставить актуальный
@@ -24,15 +26,15 @@ uint8_t DS_ADDR[][8] = { //адреса ds18b20
 ////////********     Интервалы для таймеров    ********////////
 #define DS_UPDATE_TIME 800
 #define ADS_UPDATE_TIME 250
-#define SEND_DATA_DELAY 800
+#define SEND_DATA_DELAY 2000
 
-#define SRV_DELAY 100
+#define SRV_DELAY 200
 
 #define COUNT_FLTR 5   //количество фильтраций
 #define SERIAL_SPEED 9600
 
 ////////********     Начальные значения    ********////////
-#define START_OTR_ANGL 0 // угл для закрытого отражателя 
+#define START_OTR_ANGL 140 // угл для закрытого отражателя 
 
 ////////********     Начальные значения    ********////////
 
